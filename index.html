@@ -891,6 +891,263 @@ const TEMPLATES = {
       },
     ]
   },
+  preproduction: {
+    name: '前期筹备工作流',
+    category: 'PRE-PRODUCTION WORKFLOW',
+    title: '前期筹备检查单',
+    subtitle: '影视项目开机前完整准备',
+    notes: [
+      { id: '', type: 'warning', title: '筹备质量决定拍摄成败', text: '前期工作越扎实，现场越省钱省事。任何一项准备不到位都会在拍摄现场放大成本，预算超支往往源于筹备阶段的疏忽。' },
+      { id: '', type: 'info', title: '开机前会议必开', text: '所有主创必须在开机前聚齐开一次会，当面确认所有细节，避免现场分歧。' },
+    ],
+    sections: [
+      {
+        label: 'SCRIPT DEVELOPMENT',
+        title: '剧本开发',
+        collapsed: false,
+        steps: [
+          { name: '完成剧本初稿并打印装订', desc: '带场次号和页码，方便全组参考', done: false },
+          { name: '组织剧本会议讨论并修改', desc: '导演、编剧、制片共同敲定叙事与结构', done: false },
+          { name: '锁定最终拍摄本 Shooting Script', desc: '锁定后严禁随意改剧情，只能做现场微调', done: false },
+          { name: '制作剧本击穿表 Script Breakdown', desc: '逐场列出演员、场景、道具、服装、特效需求', done: false },
+          { name: '标注每场戏的技术要点', desc: '如：日景/夜景、室内/外景、动作戏、对白戏', done: false },
+          { name: '导演画出关键场次分镜', desc: '至少完成重要动作戏和情绪高潮戏的分镜', done: false },
+        ]
+      },
+      {
+        label: 'BUDGET AND SCHEDULE',
+        title: '预算与排期',
+        collapsed: false,
+        steps: [
+          { name: '根据剧本击穿表制作初步预算', desc: '分成制作费、人员费、器材费、后期费、机动金五大块', done: false },
+          { name: '与出品方确认总预算并签字', desc: '书面确认避免后期扯皮', done: false },
+          { name: '制作拍摄日程表 Shooting Schedule', desc: '按场景归并拍摄，同一场景的戏集中拍完', done: false },
+          { name: '预留至少10%的机动时间', desc: '应对天气、演员档期、设备故障等意外', done: false },
+          { name: '确认每个拍摄日的开收工时间', desc: '考虑演员工时和交通，避免夜戏连着早班', done: false },
+        ]
+      },
+      {
+        label: 'CASTING',
+        title: '选角',
+        collapsed: false,
+        steps: [
+          { name: '确定主要角色描述和气质要求', desc: '年龄、气质、表演风格，越具体越好', done: false },
+          { name: '发布选角信息收集演员资料', desc: '通过经纪公司或选角公司广撒网', done: false },
+          { name: '安排试镜 Audition', desc: '现场试镜并录制留档，方便导演比对', done: false },
+          { name: '选定主演并签订出演合同', desc: '明确档期、片酬、肖像权、宣传义务', done: false },
+          { name: '确认次要角色和群演储备', desc: '主要角色定下后再定配角，避免气质冲突', done: false },
+          { name: '协调所有演员档期与拍摄日程匹配', desc: '提前锁定档期，避免档期冲突导致改期', done: false },
+        ]
+      },
+      {
+        label: 'LOCATION SCOUTING',
+        title: '勘景',
+        collapsed: false,
+        steps: [
+          { name: '列出剧本所有场景的勘景需求', desc: '每场戏的时间、空间、氛围要求', done: false },
+          { name: '实地考察候选拍摄地点', desc: '带上测光表和指南针，记录光线方向', done: false },
+          { name: '拍摄场地参考照片和全景视频', desc: '多角度记录，导演和摄影回去慢慢看', done: false },
+          { name: '申请拍摄许可证和报备手续', desc: '尤其公共场所和敏感区域必须合规', done: false },
+          { name: '确认水电、停车、卫生间等后勤', desc: '考虑数十人剧组的基本生活需求', done: false },
+          { name: '与场地方签订租用合同', desc: '明确使用时间、赔偿条款、恢复要求', done: false },
+        ]
+      },
+      {
+        label: 'EQUIPMENT AND CREW',
+        title: '设备与团队',
+        collapsed: false,
+        steps: [
+          { name: '确定摄影机型号和镜头配置', desc: '根据预算和画面需求选择，一般主机+备机', done: false },
+          { name: '预定全套拍摄设备和配件', desc: '灯光、轨道、摇臂、斯坦尼康等按需', done: false },
+          { name: '招募导演组、摄影组、灯光组', desc: '核心主创优先锁定，副手再陆续到位', done: false },
+          { name: '招募录音组、美术组、服化道', desc: '这些部门往往被忽视但直接影响质量', done: false },
+          { name: '采购或租赁道具和服装', desc: '关键道具多备一份，易损件备3份', done: false },
+          { name: '购买拍摄保险和人员意外险', desc: '设备险+第三方责任险+人员险，三样都要有', done: false },
+        ]
+      },
+      {
+        label: 'PRE-PRODUCTION MEETING',
+        title: '开机前会议',
+        collapsed: false,
+        steps: [
+          { name: '召开全体主创联席会议', desc: '开机前一周内召开，所有部门负责人到场', done: false },
+          { name: '导演阐述整体风格和创作意图', desc: '让全组理解"我们在拍什么"', done: false },
+          { name: '摄影师确认每场戏的镜头方案', desc: '结合分镜讨论机位、运动、景别', done: false },
+          { name: '各部门负责人汇报准备情况', desc: '暴露问题当场解决，避免带着问题开机', done: false },
+          { name: '制片组宣布通告单发布流程', desc: '明确每天收工后多久发次日通告', done: false },
+          { name: '全员签字确认开机前准备就绪', desc: '签字后原则上不再做大的调整', done: false },
+        ]
+      },
+    ]
+  },
+  shooting: {
+    name: '拍摄工作流',
+    category: 'PRODUCTION WORKFLOW',
+    title: '拍摄工作流检查单',
+    subtitle: '剧组现场执行标准流程',
+    notes: [
+      { id: '', type: 'danger', title: '素材备份是生命线', text: '每次换卡前必须完成两份独立备份并做校验。拍摄素材丢了就是重拍，成本可能十倍于设备。DIT 是整个剧组最关键的岗位之一。' },
+      { id: '', type: 'warning', title: '安全永远第一', text: '涉及动作、高空、水下、火、交通的戏必须有专业指导在场。任何人觉得不安全都有权喊停。' },
+      { id: '', type: 'info', title: '场记是后期的眼睛', text: '场记单写得好，剪辑事半功倍。每条OK/NG都要标清楚，关键戏要写清楚原因。' },
+    ],
+    sections: [
+      {
+        label: 'DAILY PREPARATION',
+        title: '每日开工准备',
+        collapsed: false,
+        steps: [
+          { name: '前一天收工前发送次日通告单', desc: '含集合时间、地点、场次、演员、天气', done: false },
+          { name: '检查当天拍摄所需全部设备', desc: '机器、电池、存储卡、监视器、无线全过一遍', done: false },
+          { name: '确认演员、场景、道具准备就绪', desc: '三大件缺一不可，任一缺失都会停机', done: false },
+          { name: '出发前确认天气和交通状况', desc: '外景戏提前查天气预报，必要时启用备用方案', done: false },
+          { name: '按通告时间到达现场开始布景', desc: '灯光摄影通常提前1-2小时到', done: false },
+          { name: '场务进行现场安全检查', desc: '电缆排线、脚架稳定性、设备固定情况', done: false },
+        ]
+      },
+      {
+        label: 'ON-SET SETUP',
+        title: '现场布置',
+        collapsed: false,
+        steps: [
+          { name: '摄影组架设摄影机和轨道', desc: '按导演摄影确认的机位精确架设', done: false },
+          { name: '灯光组按光位图布光', desc: '主光、辅光、轮廓光、背景光分层布置', done: false },
+          { name: '录音组架设无线话筒和BOOM杆', desc: '测试所有话筒，确认无底噪和干扰', done: false },
+          { name: '美术组布景和道具归位', desc: '对照场次表确认所有道具到位', done: false },
+          { name: '服化道为演员化妆和试装', desc: '拍Polaroid留档，保证连戏一致', done: false },
+          { name: '导演与摄影师最终确认机位', desc: '通过监视器检查每个机位构图', done: false },
+        ]
+      },
+      {
+        label: 'REHEARSAL AND SHOOTING',
+        title: '排练与拍摄',
+        collapsed: false,
+        steps: [
+          { name: '演员走位排练 Blocking', desc: '让演员熟悉走位，摄影配合追焦', done: false },
+          { name: '技术彩排 Technical Rehearsal', desc: '灯光、声音、摄影全部按真拍走一遍', done: false },
+          { name: '正式拍摄前打板 Clapper', desc: '读场次号和条次号，方便后期对位', done: false },
+          { name: '喊 Action → 演员表演 → Cut', desc: 'Cut后等3秒再动，避免剪辑没留余量', done: false },
+          { name: '每条结束后导演确认 OK 或 NG', desc: '关键戏至少3条OK备用', done: false },
+          { name: '关键镜头拍摄多种景别备用', desc: '全中近特都要有，给剪辑留选择', done: false },
+          { name: '每场戏结束拍摄空镜和环境音', desc: '30秒环境声和相关空镜，后期会用到', done: false },
+        ]
+      },
+      {
+        label: 'SCRIPT SUPERVISION',
+        title: '场记工作',
+        collapsed: false,
+        steps: [
+          { name: '记录每个镜头的条次和OK情况', desc: '用场记表逐条记录，标注Director\'s Choice', done: false },
+          { name: '记录演员走位和动作连接点', desc: '方便跨镜头连戏，避免穿帮', done: false },
+          { name: '拍摄连戏参考照片', desc: '服装、道具、发型、妆容都要留照', done: false },
+          { name: '记录每条的时长和特殊情况', desc: '如：风声大、路人经过、设备故障', done: false },
+          { name: '更新场次表标记已完成场次', desc: '实时掌握拍摄进度，防止漏拍', done: false },
+          { name: '每日整理场记单交给后期', desc: '电子版+纸质版，后期对照查找', done: false },
+        ]
+      },
+      {
+        label: 'MEDIA MANAGEMENT',
+        title: '素材管理（DIT工作）',
+        collapsed: false,
+        steps: [
+          { name: '换卡前严禁格式化，确认备份完成', desc: '铁律：未备份不换卡，未校验不格式化', done: false },
+          { name: 'DIT现场备份到两块独立硬盘', desc: '两块盘分开存放，避免一起丢', done: false },
+          { name: '使用专业软件校验MD5完整性', desc: 'ShotPut Pro或Silverstack，必须过校验', done: false },
+          { name: '按日期和场次建立素材文件夹', desc: '命名：YYYYMMDD_Day01_A-cam', done: false },
+          { name: '填写素材交接表并签字确认', desc: '明确责任，出问题有据可查', done: false },
+          { name: '收工回驻地后做第三份异地备份', desc: '3-2-1原则：3份备份，2种介质，1份异地', done: false },
+        ]
+      },
+      {
+        label: 'WRAP',
+        title: '收工流程',
+        collapsed: false,
+        steps: [
+          { name: '确认当天所有场次拍摄完成', desc: '对照通告单逐项打勾，漏拍当场补拍', done: false },
+          { name: '整理并清点所有设备和道具', desc: '按清单核对，丢失立即追查', done: false },
+          { name: '演员卸妆、服装归还入库', desc: '戏服按角色挂好，避免混乱', done: false },
+          { name: '场地清理恢复原状', desc: '尤其民宅和公共场所，留下好口碑便于下次再用', done: false },
+          { name: '主创碰头总结当天拍摄情况', desc: '导演、摄影、制片10分钟快速复盘', done: false },
+          { name: '发布次日通告单', desc: '根据当天进度调整后发布', done: false },
+        ]
+      },
+    ]
+  },
+  distribution: {
+    name: '宣发工作流',
+    category: 'MARKETING AND DISTRIBUTION',
+    title: '宣发工作流检查单',
+    subtitle: '成片上线与营销推广',
+    notes: [
+      { id: '', type: 'info', title: '宣发节奏很重要', text: '物料要按节奏放出，不要一次释放完。预热期、点映期、上线期、长尾期每个阶段都有对应的物料和动作。' },
+      { id: '', type: 'warning', title: '数据要实时监控', text: '上线后前48小时是黄金期，流量、评论、留存数据要每小时盯着，随时调整投放策略。' },
+    ],
+    sections: [
+      {
+        label: 'ASSET CREATION',
+        title: '宣发物料制作',
+        collapsed: false,
+        steps: [
+          { name: '制作不同时长的预告片', desc: '通常准备30秒、60秒、90秒三版', done: false },
+          { name: '设计主海报和角色海报', desc: '主海报定调，角色海报做系列化传播', done: false },
+          { name: '剪辑短视频物料', desc: '15秒竖版用于抖音/快手/视频号', done: false },
+          { name: '撰写影片简介和核心卖点', desc: '一句话卖点+100字简介+500字长介绍', done: false },
+          { name: '整理剧照和幕后花絮', desc: '挑20-30张精修高清照片', done: false },
+          { name: '制作EPK电子媒体包', desc: '含所有物料，发给媒体和平台', done: false },
+        ]
+      },
+      {
+        label: 'PLATFORM SUBMISSION',
+        title: '平台提交',
+        collapsed: false,
+        steps: [
+          { name: '确定目标发行平台和时间', desc: '独家还是多平台，先看合约', done: false },
+          { name: '按各平台技术规格输出母版', desc: '爱优腾B站抖音规格各不相同', done: false },
+          { name: '提交元数据信息', desc: '片名、简介、演职员、标签、分级', done: false },
+          { name: '上传中英文字幕文件', desc: '检查时间码、错别字、换行', done: false },
+          { name: '通过平台技术QC审核', desc: '第一次很少过，留出修改时间', done: false },
+          { name: '确认上线日期和首页推荐位', desc: '推荐位要尽量争取，流量差距巨大', done: false },
+        ]
+      },
+      {
+        label: 'MARKETING CAMPAIGN',
+        title: '宣发投放',
+        collapsed: false,
+        steps: [
+          { name: '制定3阶段宣发节奏', desc: '预热 → 点映 → 上线 → 长尾', done: false },
+          { name: '在社交媒体铺排发布内容', desc: '官博、抖音、小红书、B站多平台协同', done: false },
+          { name: '投放信息流广告', desc: '按目标人群精准投放，A/B测试素材', done: false },
+          { name: '联系影视媒体争取报道', desc: '娱乐号、影评号、主创专访', done: false },
+          { name: '组织点映场或首映礼', desc: '邀请媒体和KOL，收集第一波口碑', done: false },
+          { name: '监测社交媒体舆情', desc: '好评要放大，负面要及时回应', done: false },
+        ]
+      },
+      {
+        label: 'RELEASE',
+        title: '上线发布',
+        collapsed: false,
+        steps: [
+          { name: '上线前1小时最后确认', desc: '跟平台方确认上线时间和推荐位', done: false },
+          { name: '第一时间发布全网上线公告', desc: '所有官方渠道同步，抢首轮流量', done: false },
+          { name: '监控首日实时数据', desc: '播放量、完播率、收藏转发、评分', done: false },
+          { name: '处理突发舆情和负面评论', desc: '大号负评要单独回应，小号汇总处理', done: false },
+          { name: '与平台运营持续沟通', desc: '数据好争取更多推荐，数据差调整策略', done: false },
+          { name: '每日发布数据战报造势', desc: '用数据继续推动长尾流量', done: false },
+        ]
+      },
+      {
+        label: 'REVIEW AND REPORT',
+        title: '复盘与结项',
+        collapsed: false,
+        steps: [
+          { name: '收集全平台观看和互动数据', desc: '播放量、时长、完播率、好评率', done: false },
+          { name: '整理用户评论和典型评价', desc: '找出观众最关注的点，为下一部积累经验', done: false },
+          { name: '计算实际投入产出比', desc: '制作成本 vs 发行收入 vs 长尾价值', done: false },
+          { name: '撰写结项报告交付出品方', desc: '数据+分析+建议，闭环交付', done: false },
+          { name: '归档所有宣发物料和数据', desc: '存入项目目录，未来复用或再发行', done: false },
+        ]
+      },
+    ]
+  },
   blank: {
     name: '空白项目',
     category: '',
@@ -1386,7 +1643,10 @@ function renderTemplateList() {
   const list = document.getElementById('templateList');
   list.innerHTML = '';
   const templates = [
-    { key: 'editing', label: '剪辑工作流（47步完整模板）' },
+    { key: 'preproduction', label: '前期筹备工作流（36步）' },
+    { key: 'shooting', label: '拍摄工作流（37步）' },
+    { key: 'editing', label: '剪辑工作流（47步）' },
+    { key: 'distribution', label: '宣发工作流（28步）' },
     { key: 'blank', label: '空白项目' },
   ];
   templates.forEach(t => {
