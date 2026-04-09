@@ -1,0 +1,13 @@
+{
+  "name": "工作流检查单",
+  "short_name": "检查单",
+  "description": "交互式工作流检查单，支持剪辑、拍摄、筹备等多项目管理",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="检查单">
+<meta name="theme-color" content="#111111">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>工作流检查单</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #111111;
+  --sidebar-bg: #181818;
+  --card-bg: #1e1e1e;
+  --border: #2a2a2a;
+  --text: #e5e5e5;
+  --text-dim: #888;
+  --text-muted: #555;
+  --accent: #c8a44e;
+  --accent-dim: rgba(200,164,78,0.15);
+  --danger: #e74c3c;
+  --success: #2ecc71;
+  --hover: #252525;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
+
+/* ===== Sidebar ===== */
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  transition: transform 0.3s;
+  z-index: 100;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.sidebar-item {
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  transition: background 0.15s;
+}
+
+.sidebar-item:hover { background: var(--hover); }
+.sidebar-item.active { background: var(--accent-dim); color: var(--accent); }
+
+.sidebar-item .project-name {
+  flex: 1;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-item .project-name[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+}
+
+.sidebar-item .delete-project {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.sidebar-item:hover .delete-project { opacity: 1; }
+.sidebar-item .delete-project:hover { color: var(--danger); }
+
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ===== Main ===== */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.main-header {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 50;
+  padding: 24px 32px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.main-header .category {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.main-header .category[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+  color: var(--text-dim);
+}
+
+.main-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.main-header h1[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+}
+
+.main-header .subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.main-header .subtitle[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+}
+
+.progress-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+.progress-text {
+  font-size: 13px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ===== Content ===== */
+.content {
+  padding: 0 32px 80px;
+}
+
+/* ===== Section ===== */
+.section {
+  margin-top: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.section.dragging-over { border-top: 2px solid var(--accent); }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.section-drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.section:hover .section-drag-handle { opacity: 1; }
+.section-drag-handle:active { cursor: grabbing; }
+
+.section-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.section-label[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+  color: var(--text-dim);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.section-title[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+}
+
+.section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-count {
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.section-toggle {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.section.collapsed .section-toggle { transform: rotate(-90deg); }
+.section.collapsed .section-body { display: none; }
+
+.section-delete {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.section:hover .section-delete { opacity: 1; }
+.section-delete:hover { color: var(--danger); }
+
+/* ===== Step ===== */
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.step:hover { background: var(--hover); }
+.step.completed .step-text .step-name { color: var(--text-muted); text-decoration: line-through; }
+.step.completed .step-text .step-desc { color: var(--text-muted); }
+
+.step-drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 4px 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  margin-top: 2px;
+}
+
+.step:hover .step-drag-handle { opacity: 1; }
+.step-drag-handle:active { cursor: grabbing; }
+
+.step.dragging { opacity: 0.4; }
+.step.drag-over { border-top: 2px solid var(--accent); margin-top: -2px; }
+
+/* Checkbox */
+.checkbox {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border: 2px solid var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin-top: 1px;
+}
+
+.checkbox:hover { border-color: var(--accent); }
+
+.checkbox.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.checkbox.checked::after {
+  content: '✓';
+  color: #111;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.step-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-name {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.step-name[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+}
+
+.step-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+.step-desc[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+}
+
+.step-delete {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: opacity 0.15s, color 0.15s;
+  margin-top: 1px;
+}
+
+.step:hover .step-delete { opacity: 1; }
+.step-delete:hover { color: var(--danger); }
+
+/* Add buttons */
+.add-step-btn, .add-section-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+  width: 100%;
+}
+
+.add-step-btn:hover, .add-section-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.add-section-btn {
+  margin-top: 24px;
+}
+
+/* Note box */
+.notes-area { margin-top: 24px; }
+
+.note-box {
+  margin-bottom: 12px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+  background: rgba(200,164,78,0.08);
+  position: relative;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.note-box[data-type="warning"] { border-left-color: #e67e22; background: rgba(230,126,34,0.08); }
+.note-box[data-type="danger"]  { border-left-color: #e74c3c; background: rgba(231,76,60,0.08); }
+.note-box[data-type="info"]    { border-left-color: #3498db; background: rgba(52,152,219,0.08); }
+.note-box[data-type="success"] { border-left-color: #2ecc71; background: rgba(46,204,113,0.08); }
+.note-box[data-type="note"]    { border-left-color: #c8a44e; background: rgba(200,164,78,0.08); }
+
+.note-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.note-type-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+
+.note-type-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+.note-box .note-title {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.note-box[data-type="warning"] .note-title { color: #e67e22; }
+.note-box[data-type="danger"]  .note-title { color: #e74c3c; }
+.note-box[data-type="info"]    .note-title { color: #3498db; }
+.note-box[data-type="success"] .note-title { color: #2ecc71; }
+.note-box[data-type="note"]    .note-title { color: #c8a44e; }
+
+.note-box .note-title[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid currentColor;
+}
+
+.note-delete {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.note-box:hover .note-delete { opacity: 1; }
+.note-delete:hover { color: var(--danger); }
+
+.note-box .note-text {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+.note-box .note-text[contenteditable="true"] {
+  outline: none;
+  border-bottom: 1px solid var(--text-muted);
+}
+
+.add-note-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+  width: 100%;
+}
+
+.add-note-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Section complete celebration */
+.section.section-complete .section-header {
+  background: linear-gradient(90deg, rgba(200,164,78,0.08), rgba(46,204,113,0.08));
+  border-radius: 8px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.section.section-complete .section-count { color: var(--success); }
+
+.section-complete-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(46,204,113,0.15);
+  color: var(--success);
+  margin-left: 8px;
+  font-weight: 600;
+}
+
+/* Progress bar glow */
+.progress-bar-fill.glow {
+  box-shadow: 0 0 12px rgba(200,164,78,0.6);
+}
+
+/* Celebration overlay */
+.confetti-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Crossfade transition */
+.main-fade {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Checkbox pop animation */
+.checkbox.pop {
+  animation: checkPop 0.3s ease;
+}
+
+@keyframes checkPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* Mobile hamburger */
+.hamburger {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 200;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 90;
+}
+
+/* New project modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 380px;
+  max-width: 90vw;
+}
+
+.modal h3 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.modal input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 12px;
+  outline: none;
+}
+
+.modal input:focus { border-color: var(--accent); }
+
+.modal-template-list {
+  margin-bottom: 16px;
+}
+
+.modal-template-item {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+
+.modal-template-item:hover { border-color: var(--accent); color: var(--text); }
+.modal-template-item.selected { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.modal-actions button {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.modal-actions .cancel-btn {
+  background: var(--border);
+  color: var(--text-dim);
+}
+
+.modal-actions .confirm-btn {
+  background: var(--accent);
+  color: #111;
+  font-weight: 600;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .hamburger { display: block; }
+  .overlay.active { display: block; }
+  .main-header { padding: 24px 16px 16px 56px; }
+  .content { padding: 0 16px 80px; }
+}
+</style>
+</head>
+<body>
+
+<button class="hamburger" id="hamburger">☰</button>
+<div class="overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h2>项目列表</h2>
+  </div>
+  <div class="sidebar-list" id="sidebarList"></div>
+  <div class="sidebar-footer">
+    <button class="btn" id="newProjectBtn">+ 新建项目</button>
+  </div>
+</aside>
+
+<main class="main" id="main">
+  <div class="main-header" id="mainHeader"></div>
+  <div class="content" id="content"></div>
+</main>
+
+<!-- New Project Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>新建项目</h3>
+    <input type="text" id="newProjectName" placeholder="项目名称">
+    <div class="modal-template-list" id="templateList"></div>
+    <div class="modal-actions">
+      <button class="cancel-btn" id="modalCancel">取消</button>
+      <button class="confirm-btn" id="modalConfirm">创建</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Default template data =====
+const TEMPLATES = {
+  editing: {
+    name: '剪辑工作流',
+    category: 'POST-PRODUCTION WORKFLOW',
+    title: '剪辑工作流检查单',
+    subtitle: '基于行业标准 · Final Cut Pro',
+    notes: [
+      { id: '', type: 'danger', title: '关键节点', text: '画面锁定 Picture Lock 是整个流程最重要的节点。锁定之前可以反复改画面，锁定之后所有声音和调色工作才开始。违反这个顺序会导致大量返工。' },
+      { id: '', type: 'info', title: '提示', text: '每完成一个阶段建议输出一个版本备份，养成版本管理习惯，避免意外丢失进度。' },
+    ],
+    sections: [
+      {
+        label: 'MEDIA PREPARATION',
+        title: '素材准备',
+        collapsed: false,
+        steps: [
+          { name: '按文件管理规范创建项目文件夹结构', desc: '01_素材到10_项目管理，十个一级文件夹全部建好', done: false },
+          { name: '导入素材到FCP资源库，按拍摄日期建立Event', desc: '一天一个Event，命名：YYYYMMDD_场景描述', done: false },
+          { name: '音视频同步（如使用外录音频）', desc: '选中视频和音频，右键同步片段，用波形自动对齐', done: false },
+          { name: '逐条浏览素材，用F/Delete标记收藏和拒绝', desc: 'F=个人收藏（绿色），Delete=拒绝（红色）', done: false },
+          { name: '用关键词集合对素材分类', desc: '建议：场景名、景别、表演好、备选、问题素材', done: false },
+          { name: '核对场记单，确认所有镜头已到齐', desc: '缺失镜头立即标注，判断是否需要补拍', done: false },
+        ]
+      },
+      {
+        label: 'ASSEMBLY CUT',
+        title: '粗剪 Assembly Cut',
+        collapsed: false,
+        steps: [
+          { name: '新建时间线，确认分辨率/帧率/色彩空间', desc: '技术参数开工前确定，全片统一不可更改', done: false },
+          { name: '按剧本场次顺序把最佳素材拖入时间线', desc: '不纠结细节，先把完整故事堆出来，宁长勿短', done: false },
+          { name: '每场戏保留多个候选镜头备用', desc: '不要此时就删备选，精剪阶段才做最终取舍', done: false },
+          { name: '完整看一遍，只关注叙事逻辑是否成立', desc: '不看节奏不看细节，只看故事讲通了没有', done: false },
+          { name: '用M键标记明显问题点并写备注', desc: '如：逻辑断了、这场戏可能要删、反应镜头不够', done: false },
+          { name: '输出粗剪版本供内审', desc: '命名：YYYYMMDD_项目名_粗剪_v01.mp4', done: false },
+        ]
+      },
+      {
+        label: 'ROUGH CUT TO FINE CUT',
+        title: '精剪 Fine Cut',
+        collapsed: false,
+        steps: [
+          { name: '根据粗剪反馈删除不需要的场次', desc: '先做减法：删掉这场戏故事还成立吗？成立就删', done: false },
+          { name: '精确选择每个镜头的入点和出点', desc: '每个cut要有理由：跟动作、跟视线、跟情绪还是跟节奏', done: false },
+          { name: '处理对话戏的正反打节奏', desc: '尝试在一方说话时停留在另一方的反应上', done: false },
+          { name: '加入临时音乐找整体节奏感', desc: '先放调性接近的参考音乐，帮你感受全片呼吸', done: false },
+          { name: '精剪第一轮完成后输出收集反馈', desc: '命名：YYYYMMDD_项目名_精剪_v02.mp4', done: false },
+          { name: '根据反馈做多轮精剪', desc: '第一轮看结构，第二轮看节奏，第三轮看细节', done: false },
+          { name: '反复微调直到确认画面不再改动', desc: '这一步之后所有工作基于此版本，改动成本极高', done: false },
+        ]
+      },
+      {
+        label: 'PICTURE LOCK — 关键硬节点',
+        title: '画面锁定 Picture Lock',
+        collapsed: false,
+        steps: [
+          { name: '导演/客户正式确认画面最终版', desc: '最好有书面确认（邮件/微信记录）', done: false },
+          { name: '锁定后严禁改剪辑点、顺序和时长', desc: '之后所有声音和调色基于这个时间线，改动则全部返工', done: false },
+          { name: '输出画面锁定版本并备份工程文件', desc: '命名：YYYYMMDD_项目名_PictureLock_voX.mp4', done: false },
+          { name: '如需转DaVinci调色，此时导出XML', desc: 'FCP导出XML，DaVinci导入，确认时间线匹配后再开始', done: false },
+        ]
+      },
+      {
+        label: 'SOUND DESIGN AND MIX',
+        title: '声音设计与混音',
+        collapsed: false,
+        steps: [
+          { name: '对白清理：降噪、去杂音、统一音量', desc: 'FCP内置降噪或导出到专业音频软件处理后回导', done: false },
+          { name: '判断是否需要ADR对白补录', desc: '现场录音质量太差的对白需要演员重新配音', done: false },
+          { name: '铺环境音底层', desc: '每场戏都要有连续环境音打底，让声音空间不断裂', done: false },
+          { name: '添加动作音效 Foley', desc: '脚步、开门、放杯子等，可用音效库或自己录制', done: false },
+          { name: '编辑配乐，精确卡点', desc: '音乐的进入和退出要和画面情绪转折对齐', done: false },
+          { name: '混音：平衡对白、环境音、音效、音乐', desc: '对白最响，其次音乐，再次音效和环境', done: false },
+          { name: '响度标准化', desc: '网络平台-14到-16 LUFS，广播-24 LUFS', done: false },
+        ]
+      },
+      {
+        label: 'COLOR GRADING',
+        title: '调色',
+        collapsed: false,
+        steps: [
+          { name: '一级校色：规范化所有素材', desc: '统一曝光、白平衡、对比度，让所有镜头像同一部片子', done: false },
+          { name: '场景匹配：同一场戏内色彩一致', desc: '用镜头匹配功能或手动用示波器对齐', done: false },
+          { name: '二级调色：局部精细调整', desc: '人脸提亮、窗外过曝压回、局部色彩强调', done: false },
+          { name: '风格化调色：建立全片色彩风格', desc: '基于调色参考图手动调节或用LUT作为起点微调', done: false },
+          { name: '在校色监视器上检查最终效果', desc: '有条件尽量用校色过的监视器确认', done: false },
+          { name: '调色完成后回批到FCP', desc: 'DaVinci导出XML，FCP导入，确认匹配和色彩正确', done: false },
+        ]
+      },
+      {
+        label: 'FINISHING AND QC',
+        title: '包装与终审',
+        collapsed: false,
+        steps: [
+          { name: '添加字幕', desc: '检查时间对齐、字体统一、拼写正确', done: false },
+          { name: '添加片头片尾、角标水印', desc: '使用04_包装中的模板素材', done: false },
+          { name: '添加转场（如需要）', desc: '转场要有叙事理由，大部分硬切就够了', done: false },
+          { name: '全片QC检查', desc: '音画同步、字幕错误、黑帧闪帧、音频爆音、色彩跳变', done: false },
+          { name: '在不同设备上预览', desc: '电脑、手机、电视各看一遍确认亮度和色彩', done: false },
+          { name: '按交付规格输出成片', desc: '命名：YYYYMMDD_片名_分辨率_编码_格式_v版本号', done: false },
+          { name: '输出不同平台适配版本', desc: '存入03_输出/04_平台适配', done: false },
+        ]
+      },
+      {
+        label: 'ARCHIVE AND REVIEW',
+        title: '归档与复盘',
+        collapsed: false,
+        steps: [
+          { name: '确认客户/导演签收成片', desc: '保留签收记录存入10_项目管理/03_交付记录', done: false },
+          { name: '清理冗余文件，保留关键版本', desc: '保留粗剪v01、精剪终版、PictureLock版、终版成片', done: false },
+          { name: '完整项目打包备份', desc: '至少两份独立备份，保留至少一年', done: false },
+          { name: '项目复盘', desc: '记录做得好的、该改进的、时间卡点、学到什么', done: false },
+        ]
+      },
+    ]
+  },
+  blank: {
+    name: '空白项目',
+    category: '',
+    title: '新检查单',
+    subtitle: '',
+    notes: [],
+    sections: [
+      {
+        label: 'SECTION 1',
+        title: '第一阶段',
+        collapsed: false,
+        steps: [
+          { name: '步骤 1', desc: '描述', done: false },
+        ]
+      }
+    ]
+  }
+};
+
+// ===== State =====
+const STORAGE_KEY = 'workflow-checklist-data';
+let state = { projects: [], activeProjectId: null };
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      state = JSON.parse(raw);
+      return;
+    }
+  } catch(e) {}
+  // Init with default editing template
+  const project = createProjectFromTemplate('editing', '剪辑工作流检查单');
+  state = { projects: [project], activeProjectId: project.id };
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function createProjectFromTemplate(templateKey, name) {
+  const tpl = TEMPLATES[templateKey];
+  const project = JSON.parse(JSON.stringify(tpl));
+  project.id = genId();
+  if (name) project.title = name;
+  // Add IDs to sections, steps, notes
+  project.sections.forEach(s => {
+    s.id = genId();
+    s.steps.forEach(st => { st.id = genId(); });
+  });
+  if (project.notes) project.notes.forEach(n => { n.id = genId(); });
+  // Migrate old single-note format
+  if (project.note && !project.notes) {
+    project.notes = [{ id: genId(), type: 'note', title: '注意', text: project.note }];
+    delete project.note;
+  }
+  return project;
+}
+
+function getActiveProject() {
+  return state.projects.find(p => p.id === state.activeProjectId);
+}
+
+// ===== Rendering =====
+function render() {
+  renderSidebar();
+  renderMain();
+  saveState();
+}
+
+function renderSidebar() {
+  const list = document.getElementById('sidebarList');
+  list.innerHTML = '';
+  state.projects.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'sidebar-item' + (p.id === state.activeProjectId ? ' active' : '');
+    item.innerHTML = `
+      <span class="project-name">${esc(p.title)}</span>
+      <button class="delete-project" title="删除项目">×</button>
+    `;
+    const nameEl = item.querySelector('.project-name');
+    nameEl.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      nameEl.contentEditable = 'true';
+      nameEl.focus();
+      selectAll(nameEl);
+    });
+    nameEl.addEventListener('blur', () => {
+      nameEl.contentEditable = 'false';
+      p.title = nameEl.textContent.trim() || '未命名项目';
+      saveState();
+      renderSidebar();
+    });
+    nameEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+    });
+    item.querySelector('.delete-project').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (state.projects.length === 1) return alert('至少保留一个项目');
+      if (!confirm(`确定删除「${p.title}」？`)) return;
+      state.projects = state.projects.filter(x => x.id !== p.id);
+      if (state.activeProjectId === p.id) {
+        state.activeProjectId = state.projects[0].id;
+      }
+      render();
+    });
+    item.addEventListener('click', () => {
+      state.activeProjectId = p.id;
+      render();
+      // Mobile: close sidebar
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.remove('active');
+    });
+    list.appendChild(item);
+  });
+}
+
+function renderMain() {
+  const project = getActiveProject();
+  if (!project) return;
+
+  // Header
+  const totalSteps = project.sections.reduce((s, sec) => s + sec.steps.length, 0);
+  const doneSteps = project.sections.reduce((s, sec) => s + sec.steps.filter(st => st.done).length, 0);
+  const pct = totalSteps ? Math.round(doneSteps / totalSteps * 100) : 0;
+
+  const header = document.getElementById('mainHeader');
+  header.innerHTML = `
+    <div class="category">${esc(project.category || '')}</div>
+    <h1>${esc(project.title)}</h1>
+    <div class="subtitle">${esc(project.subtitle || '')} · 共 ${totalSteps} 个步骤</div>
+    <div class="progress-bar-wrapper">
+      <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      <div class="progress-text">${doneSteps} / ${totalSteps} 已完成</div>
+    </div>
+  `;
+
+  // Make category, title, subtitle editable
+  const catEl = header.querySelector('.category');
+  makeEditable(catEl, val => { project.category = val; saveState(); });
+
+  const h1El = header.querySelector('h1');
+  makeEditable(h1El, val => { project.title = val || '未命名'; saveState(); renderSidebar(); });
+
+  const subEl = header.querySelector('.subtitle');
+  makeEditable(subEl, val => { project.subtitle = val; saveState(); });
+
+  // Content
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  project.sections.forEach((sec, si) => {
+    const secEl = document.createElement('div');
+    secEl.className = 'section' + (sec.collapsed ? ' collapsed' : '');
+    secEl.dataset.sectionId = sec.id;
+    secEl.draggable = false; // handled by drag handle
+
+    const doneInSec = sec.steps.filter(st => st.done).length;
+    const secComplete = sec.steps.length > 0 && doneInSec === sec.steps.length;
+    if (secComplete) secEl.classList.add('section-complete');
+
+    secEl.innerHTML = `
+      <div class="section-header">
+        <div class="section-header-left">
+          <span class="section-drag-handle" draggable="true" title="拖拽排序">⠿</span>
+          <div class="section-titles">
+            <div class="section-label">${esc(sec.label)}</div>
+            <div class="section-title">${esc(sec.title)}${secComplete ? '<span class="section-complete-badge">已完成</span>' : ''}</div>
+          </div>
+        </div>
+        <div class="section-header-right">
+          <button class="section-delete" title="删除分组">×</button>
+          <span class="section-count">${doneInSec}/${sec.steps.length}</span>
+          <span class="section-toggle">▼</span>
+        </div>
+      </div>
+      <div class="section-body"></div>
+    `;
+
+    // Toggle collapse
+    const toggleArea = secEl.querySelector('.section-header');
+    toggleArea.addEventListener('click', (e) => {
+      if (e.target.closest('.section-drag-handle') || e.target.closest('.section-delete') ||
+          e.target.closest('[contenteditable="true"]')) return;
+      sec.collapsed = !sec.collapsed;
+      render();
+    });
+
+    // Editable labels
+    const labelEl = secEl.querySelector('.section-label');
+    makeEditable(labelEl, val => { sec.label = val; saveState(); });
+
+    const titleEl = secEl.querySelector('.section-title');
+    makeEditable(titleEl, val => { sec.title = val; saveState(); });
+
+    // Delete section
+    secEl.querySelector('.section-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!confirm(`确定删除「${sec.title}」及其所有步骤？`)) return;
+      project.sections.splice(si, 1);
+      render();
+    });
+
+    // Section drag
+    const secDragHandle = secEl.querySelector('.section-drag-handle');
+    secDragHandle.addEventListener('dragstart', (e) => {
+      e.stopPropagation();
+      e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'section', sectionId: sec.id }));
+      e.dataTransfer.effectAllowed = 'move';
+      secEl.style.opacity = '0.4';
+    });
+    secDragHandle.addEventListener('dragend', () => { secEl.style.opacity = ''; });
+
+    secEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      try {
+        // We can't read data during dragover, so just show indicator
+        secEl.classList.add('dragging-over');
+      } catch(err) {}
+    });
+    secEl.addEventListener('dragleave', () => { secEl.classList.remove('dragging-over'); });
+    secEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      secEl.classList.remove('dragging-over');
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        if (data.type === 'section' && data.sectionId !== sec.id) {
+          const fromIdx = project.sections.findIndex(s => s.id === data.sectionId);
+          const toIdx = project.sections.findIndex(s => s.id === sec.id);
+          if (fromIdx !== -1 && toIdx !== -1) {
+            const [moved] = project.sections.splice(fromIdx, 1);
+            project.sections.splice(toIdx, 0, moved);
+            render();
+          }
+        }
+      } catch(err) {}
+    });
+
+    // Steps
+    const body = secEl.querySelector('.section-body');
+    sec.steps.forEach((step, sti) => {
+      const stepEl = document.createElement('div');
+      stepEl.className = 'step' + (step.done ? ' completed' : '');
+      stepEl.dataset.stepId = step.id;
+
+      stepEl.innerHTML = `
+        <span class="step-drag-handle" draggable="true" title="拖拽排序">⠿</span>
+        <div class="checkbox ${step.done ? 'checked' : ''}"></div>
+        <div class="step-text">
+          <div class="step-name">${esc(step.name)}</div>
+          <div class="step-desc">${esc(step.desc)}</div>
+        </div>
+        <button class="step-delete" title="删除步骤">×</button>
+      `;
+
+      // Checkbox
+      stepEl.querySelector('.checkbox').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wasDone = step.done;
+        step.done = !step.done;
+        if (step.done) {
+          SFX.check();
+          // Check if this completes the section
+          const allDone = sec.steps.every(st => st.done);
+          if (allDone) {
+            setTimeout(() => { SFX.sectionComplete(); launchConfetti(); }, 200);
+          }
+        } else {
+          SFX.uncheck();
+        }
+        render();
+        // Animate checkbox
+        const cb = document.querySelector(`[data-step-id="${step.id}"] .checkbox`);
+        if (cb) { cb.classList.add('pop'); setTimeout(() => cb.classList.remove('pop'), 300); }
+        // Glow progress bar
+        const fill = document.querySelector('.progress-bar-fill');
+        if (fill) { fill.classList.add('glow'); setTimeout(() => fill.classList.remove('glow'), 800); }
+      });
+
+      // Editable name & desc
+      const nameEl = stepEl.querySelector('.step-name');
+      makeEditable(nameEl, val => { step.name = val; saveState(); });
+
+      const descEl = stepEl.querySelector('.step-desc');
+      makeEditable(descEl, val => { step.desc = val; saveState(); });
+
+      // Delete step
+      stepEl.querySelector('.step-delete').addEventListener('click', (e) => {
+        e.stopPropagation();
+        sec.steps.splice(sti, 1);
+        render();
+      });
+
+      // Step drag
+      const stepDragHandle = stepEl.querySelector('.step-drag-handle');
+      stepDragHandle.addEventListener('dragstart', (e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'step', sectionId: sec.id, stepId: step.id }));
+        e.dataTransfer.effectAllowed = 'move';
+        stepEl.classList.add('dragging');
+      });
+      stepDragHandle.addEventListener('dragend', () => { stepEl.classList.remove('dragging'); });
+
+      stepEl.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        // Remove drag-over from siblings
+        body.querySelectorAll('.step.drag-over').forEach(el => el.classList.remove('drag-over'));
+        stepEl.classList.add('drag-over');
+      });
+      stepEl.addEventListener('dragleave', () => { stepEl.classList.remove('drag-over'); });
+      stepEl.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        stepEl.classList.remove('drag-over');
+        try {
+          const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+          if (data.type === 'step') {
+            // Find source
+            const srcSec = project.sections.find(s => s.id === data.sectionId);
+            if (!srcSec) return;
+            const srcIdx = srcSec.steps.findIndex(st => st.id === data.stepId);
+            if (srcIdx === -1) return;
+            const [moved] = srcSec.steps.splice(srcIdx, 1);
+            // Insert at target position
+            const tgtIdx = sec.steps.findIndex(st => st.id === step.id);
+            sec.steps.splice(tgtIdx, 0, moved);
+            render();
+          }
+        } catch(err) {}
+      });
+
+      body.appendChild(stepEl);
+    });
+
+    // Add step button
+    const addStepBtn = document.createElement('button');
+    addStepBtn.className = 'add-step-btn';
+    addStepBtn.textContent = '+ 添加步骤';
+    addStepBtn.addEventListener('click', () => {
+      sec.steps.push({ id: genId(), name: '新步骤', desc: '描述', done: false });
+      sec.collapsed = false;
+      SFX.addStep();
+      render();
+    });
+    body.appendChild(addStepBtn);
+
+    content.appendChild(secEl);
+  });
+
+  // Add section button
+  const addSecBtn = document.createElement('button');
+  addSecBtn.className = 'add-section-btn';
+  addSecBtn.textContent = '+ 添加分组';
+  addSecBtn.addEventListener('click', () => {
+    project.sections.push({
+      id: genId(),
+      label: 'NEW SECTION',
+      title: '新分组',
+      collapsed: false,
+      steps: [{ id: genId(), name: '新步骤', desc: '描述', done: false }]
+    });
+    SFX.addStep();
+    render();
+  });
+  content.appendChild(addSecBtn);
+
+  // Notes area
+  if (!project.notes) project.notes = [];
+  const notesArea = document.createElement('div');
+  notesArea.className = 'notes-area';
+
+  const NOTE_TYPES = [
+    { key: 'note', label: '备注' },
+    { key: 'warning', label: '警告' },
+    { key: 'danger', label: '危险' },
+    { key: 'info', label: '提示' },
+    { key: 'success', label: '成功' },
+  ];
+  const TYPE_LABELS = { note: '备注', warning: '警告', danger: '危险', info: '提示', success: '成功' };
+
+  project.notes.forEach((note, ni) => {
+    const noteEl = document.createElement('div');
+    noteEl.className = 'note-box';
+    noteEl.dataset.type = note.type || 'note';
+    noteEl.innerHTML = `
+      <div class="note-header">
+        <button class="note-type-btn">${TYPE_LABELS[note.type] || '备注'}</button>
+        <div class="note-title">${esc(note.title)}</div>
+        <button class="note-delete" title="删除备注">×</button>
+      </div>
+      <div class="note-text">${esc(note.text)}</div>
+    `;
+
+    // Cycle note type
+    noteEl.querySelector('.note-type-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const keys = NOTE_TYPES.map(t => t.key);
+      const idx = keys.indexOf(note.type || 'note');
+      note.type = keys[(idx + 1) % keys.length];
+      SFX.click();
+      saveState();
+      render();
+    });
+
+    // Editable title
+    const titleEl = noteEl.querySelector('.note-title');
+    makeEditable(titleEl, val => { note.title = val || '备注'; saveState(); });
+
+    // Editable text
+    const textEl = noteEl.querySelector('.note-text');
+    makeEditable(textEl, val => { note.text = val; saveState(); });
+
+    // Delete note
+    noteEl.querySelector('.note-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      project.notes.splice(ni, 1);
+      SFX.click();
+      render();
+    });
+
+    notesArea.appendChild(noteEl);
+  });
+
+  // Add note button
+  const addNoteBtn = document.createElement('button');
+  addNoteBtn.className = 'add-note-btn';
+  addNoteBtn.textContent = '+ 添加备注';
+  addNoteBtn.addEventListener('click', () => {
+    project.notes.push({ id: genId(), type: 'note', title: '备注', text: '在这里写内容' });
+    SFX.click();
+    render();
+  });
+  notesArea.appendChild(addNoteBtn);
+  content.appendChild(notesArea);
+
+  // Crossfade animation
+  content.classList.remove('main-fade');
+  void content.offsetWidth;
+  content.classList.add('main-fade');
+}
+
+// ===== Utilities =====
+function esc(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function selectAll(el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function makeEditable(el, onSave) {
+  el.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    el.contentEditable = 'true';
+    el.focus();
+    selectAll(el);
+  });
+  el.addEventListener('blur', () => {
+    el.contentEditable = 'false';
+    onSave(el.textContent.trim());
+  });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+  });
+}
+
+// ===== Modal =====
+let selectedTemplate = 'editing';
+
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('active');
+  document.getElementById('newProjectName').value = '';
+  document.getElementById('newProjectName').focus();
+  renderTemplateList();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+
+function renderTemplateList() {
+  const list = document.getElementById('templateList');
+  list.innerHTML = '';
+  const templates = [
+    { key: 'editing', label: '剪辑工作流（47步完整模板）' },
+    { key: 'blank', label: '空白项目' },
+  ];
+  templates.forEach(t => {
+    const item = document.createElement('div');
+    item.className = 'modal-template-item' + (selectedTemplate === t.key ? ' selected' : '');
+    item.textContent = t.label;
+    item.addEventListener('click', () => {
+      selectedTemplate = t.key;
+      renderTemplateList();
+    });
+    list.appendChild(item);
+  });
+}
+
+document.getElementById('newProjectBtn').addEventListener('click', openModal);
+document.getElementById('modalCancel').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+document.getElementById('modalConfirm').addEventListener('click', () => {
+  const name = document.getElementById('newProjectName').value.trim() || (selectedTemplate === 'editing' ? '剪辑工作流检查单' : '新项目');
+  const project = createProjectFromTemplate(selectedTemplate, name);
+  state.projects.push(project);
+  state.activeProjectId = project.id;
+  closeModal();
+  render();
+});
+
+document.getElementById('newProjectName').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('modalConfirm').click();
+});
+
+// ===== Mobile sidebar =====
+document.getElementById('hamburger').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('active');
+});
+document.getElementById('overlay').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('active');
+});
+
+// ===== Sound Effects (Web Audio API) =====
+const SFX = (() => {
+  let ctx;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return ctx;
+  }
+
+  function playTone(freq, duration, type = 'sine', gain = 0.15, decay = true) {
+    const c = getCtx();
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, c.currentTime);
+    g.gain.setValueAtTime(gain, c.currentTime);
+    if (decay) g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration);
+    osc.connect(g).connect(c.destination);
+    osc.start(c.currentTime);
+    osc.stop(c.currentTime + duration);
+  }
+
+  function playChime(freqs, interval, duration, type = 'sine', gain = 0.12) {
+    freqs.forEach((f, i) => {
+      setTimeout(() => playTone(f, duration, type, gain), i * interval);
+    });
+  }
+
+  return {
+    // Checkbox checked — bright short ding
+    check() {
+      playTone(880, 0.15, 'sine', 0.12);
+      setTimeout(() => playTone(1320, 0.12, 'sine', 0.08), 60);
+    },
+    // Checkbox unchecked — soft low tone
+    uncheck() {
+      playTone(440, 0.12, 'sine', 0.06);
+    },
+    // Section complete — celebratory ascending chime (bell-like)
+    sectionComplete() {
+      playChime([523, 659, 784, 1047], 100, 0.4, 'sine', 0.15);
+      // Add shimmer overtone
+      setTimeout(() => playChime([1568, 2093], 80, 0.5, 'sine', 0.06), 350);
+    },
+    // Generic click — subtle tick
+    click() {
+      playTone(660, 0.06, 'sine', 0.05);
+    },
+    // Add step — quick ascending pair
+    addStep() {
+      playTone(600, 0.08, 'sine', 0.07);
+      setTimeout(() => playTone(800, 0.08, 'sine', 0.07), 60);
+    },
+  };
+})();
+
+// ===== Confetti =====
+function launchConfetti() {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti-canvas';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  const ctx2 = canvas.getContext('2d');
+
+  const colors = ['#c8a44e', '#2ecc71', '#3498db', '#e67e22', '#e74c3c', '#9b59b6', '#f1c40f'];
+  const particles = Array.from({ length: 60 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 - Math.random() * 80,
+    w: 4 + Math.random() * 6,
+    h: 3 + Math.random() * 4,
+    vx: (Math.random() - 0.5) * 4,
+    vy: 2 + Math.random() * 4,
+    rot: Math.random() * Math.PI * 2,
+    rotV: (Math.random() - 0.5) * 0.2,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    life: 1,
+  }));
+
+  let frame = 0;
+  function draw() {
+    ctx2.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      if (p.life <= 0) return;
+      alive = true;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.08;
+      p.rot += p.rotV;
+      p.life -= 0.008;
+      ctx2.save();
+      ctx2.globalAlpha = Math.max(0, p.life);
+      ctx2.translate(p.x, p.y);
+      ctx2.rotate(p.rot);
+      ctx2.fillStyle = p.color;
+      ctx2.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx2.restore();
+    });
+    frame++;
+    if (alive && frame < 180) {
+      requestAnimationFrame(draw);
+    } else {
+      canvas.remove();
+    }
+  }
+  requestAnimationFrame(draw);
+}
+
+// ===== Init =====
+loadState();
+// Migrate old single-note format in existing projects
+state.projects.forEach(p => {
+  if (p.note && !p.notes) {
+    p.notes = [{ id: genId(), type: 'note', title: '注意', text: p.note }];
+    delete p.note;
+  }
+  if (!p.notes) p.notes = [];
+});
+render();
+
+// ===== PWA Service Worker =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
