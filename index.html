@@ -2982,81 +2982,23 @@ function closeSyncSettings() {
 
 function renderSyncModal() {
   const body = document.getElementById('syncModalBody');
-  const config = getSyncConfig();
   const isConnected = !!syncDb;
 
-  if (isConnected && config) {
-    body.innerHTML = `
-      <div class="sync-connected-info">
-        <div class="big-check">✅</div>
-        <div class="connected-text">云同步已开启</div>
-        <div class="db-url">${esc(config.databaseURL || '')}</div>
-        <button class="sync-disconnect-btn" id="syncDisconnectBtn">断开同步</button>
-        <div style="margin-top:16px;">
-          <button class="confirm-btn" id="syncPushBtn" style="width:100%">立即上传当前数据</button>
-        </div>
+  body.innerHTML = `
+    <div class="sync-connected-info">
+      <div class="big-check">${isConnected ? '✅' : '⏳'}</div>
+      <div class="connected-text">${isConnected ? '云同步已开启' : '正在连接…'}</div>
+      <div class="db-url">所有设备打开即自动同步，无需额外设置</div>
+      <div style="margin-top:16px;">
+        <button class="confirm-btn" id="syncPushBtn" style="width:100%">立即上传当前数据</button>
       </div>
-    `;
-    document.getElementById('syncDisconnectBtn').addEventListener('click', () => {
-      if (!confirm('断开后此设备将不再同步，本地数据保留。确定？')) return;
-      disconnectFirebase();
-      renderSyncModal();
-    });
-    document.getElementById('syncPushBtn').addEventListener('click', () => {
-      pushToCloud();
-      SFX.check();
-      closeSyncSettings();
-    });
-  } else {
-    body.innerHTML = `
-      <div class="sync-instructions">
-        <b>首次设置（免费，约 3 分钟）：</b>
-        <ol>
-          <li>打开 <b>console.firebase.google.com</b></li>
-          <li>创建一个项目（名称随意，如 "我的检查单"）</li>
-          <li>进入项目 → 左侧 <b>构建 → Realtime Database</b> → 创建数据库 → 选 <b>测试模式</b></li>
-          <li>点左上 ⚙ → <b>项目设置</b> → 滚到底部 "您的应用" → 点 <b>Web（&lt;/&gt;）</b> 图标注册应用</li>
-          <li>复制下方三个值粘贴到对应输入框</li>
-        </ol>
-        <div style="margin-top:6px;">所有设备填同样的配置即可自动同步。</div>
-      </div>
-      <div class="sync-form">
-        <label>API Key</label>
-        <input type="text" id="syncApiKey" placeholder="AIzaSy...">
-        <label>Database URL</label>
-        <input type="text" id="syncDbUrl" placeholder="https://xxx-default-rtdb.firebaseio.com">
-        <div class="hint">在 Realtime Database 页面顶部可以看到此 URL</div>
-        <label>Project ID</label>
-        <input type="text" id="syncProjectId" placeholder="my-checklist-12345">
-      </div>
-      <div style="margin-top:14px;">
-        <button class="confirm-btn" id="syncConnectBtn" style="width:100%">连接</button>
-      </div>
-    `;
-    document.getElementById('syncConnectBtn').addEventListener('click', () => {
-      const apiKey = document.getElementById('syncApiKey').value.trim();
-      const dbUrl = document.getElementById('syncDbUrl').value.trim();
-      const projectId = document.getElementById('syncProjectId').value.trim();
-      if (!apiKey || !dbUrl) {
-        alert('请至少填写 API Key 和 Database URL');
-        return;
-      }
-      const config = {
-        apiKey: apiKey,
-        databaseURL: dbUrl,
-        projectId: projectId || undefined,
-      };
-      const ok = connectFirebase(config);
-      if (ok) {
-        // Push current local data to cloud on first connect
-        pushToCloud();
-        SFX.sectionComplete();
-        renderSyncModal();
-      } else {
-        alert('连接失败，请检查配置是否正确');
-      }
-    });
-  }
+    </div>
+  `;
+  document.getElementById('syncPushBtn').addEventListener('click', () => {
+    pushToCloud();
+    SFX.check();
+    closeSyncSettings();
+  });
 }
 
 document.getElementById('syncSettingsBtn').addEventListener('click', openSyncSettings);
@@ -3073,11 +3015,14 @@ if (!state.activeProjectId && state.projects.length > 0) {
 }
 render();
 
-// Auto-reconnect to Firebase if previously configured
-const _savedSyncConfig = getSyncConfig();
-if (_savedSyncConfig) {
-  connectFirebase(_savedSyncConfig);
-}
+// Auto-connect to Firebase (hardcoded config — always sync)
+const BUILTIN_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCKOd8SJu0x8gdi9wdky1LAr55W5wKNlCk",
+  authDomain: "workflow-checklist.firebaseapp.com",
+  databaseURL: "https://workflow-checklist-default-rtdb.firebaseio.com",
+  projectId: "workflow-checklist",
+};
+connectFirebase(BUILTIN_FIREBASE_CONFIG);
 
 // ===== PWA Service Worker =====
 if ('serviceWorker' in navigator) {
