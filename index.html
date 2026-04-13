@@ -112,6 +112,23 @@ body {
 .sidebar-item:hover .delete-project { opacity: 1; }
 .sidebar-item .delete-project:hover { color: var(--danger); }
 
+.sidebar-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 12px 16px 4px;
+  user-select: none;
+}
+.sidebar-group-label:first-child { padding-top: 8px; }
+
+.sidebar-item.completed-project .project-name {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-color: rgba(200,164,78,0.3);
+}
+
 .sidebar-footer {
   padding: 12px;
   border-top: 1px solid var(--border);
@@ -807,6 +824,38 @@ body {
 .status-badge[data-status="后期中"] { background: rgba(155,89,182,0.15); color: #9b59b6; }
 .status-badge[data-status="已交付"] { background: rgba(46,204,113,0.15); color: #2ecc71; }
 .status-badge[data-status="已搁置"] { background: rgba(127,127,127,0.15); color: #888; }
+.status-badge[data-status="宣发中"] { background: rgba(241,196,15,0.15); color: #f1c40f; }
+.status-badge[data-status="已完成"] { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.status-badge[data-status="已归档"] { background: rgba(127,127,127,0.15); color: #888; }
+
+.complete-project-btn {
+  background: none;
+  border: 1px solid rgba(46,204,113,0.4);
+  color: #2ecc71;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.complete-project-btn:hover {
+  background: rgba(46,204,113,0.15);
+  border-color: #2ecc71;
+}
+.reopen-project-btn {
+  background: none;
+  border: 1px solid rgba(230,126,34,0.4);
+  color: #e67e22;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.reopen-project-btn:hover {
+  background: rgba(230,126,34,0.15);
+  border-color: #e67e22;
+}
 
 .overall-progress {
   margin-top: 12px;
@@ -1713,48 +1762,65 @@ function render() {
 function renderSidebar() {
   const list = document.getElementById('sidebarList');
   list.innerHTML = '';
-  state.projects.forEach(p => {
-    const item = document.createElement('div');
-    item.className = 'sidebar-item' + (p.id === state.activeProjectId ? ' active' : '');
-    item.innerHTML = `
-      <span class="project-name">${esc(p.title)}</span>
-      <button class="delete-project" title="删除项目">×</button>
-    `;
-    const nameEl = item.querySelector('.project-name');
-    nameEl.addEventListener('dblclick', (e) => {
-      e.stopPropagation();
-      nameEl.contentEditable = 'true';
-      nameEl.focus();
-      selectAll(nameEl);
+
+  const isFinished = p => p.status === '已完成' || p.status === '已归档';
+  const active = state.projects.filter(p => !isFinished(p));
+  const done = state.projects.filter(p => isFinished(p));
+
+  function renderGroup(label, projects) {
+    if (projects.length === 0) return;
+    const groupLabel = document.createElement('div');
+    groupLabel.className = 'sidebar-group-label';
+    groupLabel.textContent = label;
+    list.appendChild(groupLabel);
+
+    projects.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'sidebar-item'
+        + (p.id === state.activeProjectId ? ' active' : '')
+        + (isFinished(p) ? ' completed-project' : '');
+      item.innerHTML = `
+        <span class="project-name">${esc(p.title)}</span>
+        <button class="delete-project" title="删除项目">×</button>
+      `;
+      const nameEl = item.querySelector('.project-name');
+      nameEl.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        nameEl.contentEditable = 'true';
+        nameEl.focus();
+        selectAll(nameEl);
+      });
+      nameEl.addEventListener('blur', () => {
+        nameEl.contentEditable = 'false';
+        p.title = nameEl.textContent.trim() || '未命名项目';
+        saveState();
+        renderSidebar();
+      });
+      nameEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+      });
+      item.querySelector('.delete-project').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (state.projects.length === 1) return alert('至少保留一个项目');
+        if (!confirm(`确定删除「${p.title}」？`)) return;
+        state.projects = state.projects.filter(x => x.id !== p.id);
+        if (state.activeProjectId === p.id) {
+          state.activeProjectId = state.projects[0].id;
+        }
+        render();
+      });
+      item.addEventListener('click', () => {
+        state.activeProjectId = p.id;
+        render();
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('overlay').classList.remove('active');
+      });
+      list.appendChild(item);
     });
-    nameEl.addEventListener('blur', () => {
-      nameEl.contentEditable = 'false';
-      p.title = nameEl.textContent.trim() || '未命名项目';
-      saveState();
-      renderSidebar();
-    });
-    nameEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
-    });
-    item.querySelector('.delete-project').addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (state.projects.length === 1) return alert('至少保留一个项目');
-      if (!confirm(`确定删除「${p.title}」？`)) return;
-      state.projects = state.projects.filter(x => x.id !== p.id);
-      if (state.activeProjectId === p.id) {
-        state.activeProjectId = state.projects[0].id;
-      }
-      render();
-    });
-    item.addEventListener('click', () => {
-      state.activeProjectId = p.id;
-      render();
-      // Mobile: close sidebar
-      document.getElementById('sidebar').classList.remove('open');
-      document.getElementById('overlay').classList.remove('active');
-    });
-    list.appendChild(item);
-  });
+  }
+
+  renderGroup('进行中', active);
+  renderGroup('已完成', done);
 }
 
 function renderMain() {
@@ -1823,6 +1889,9 @@ function renderProjectMeta(project) {
         <div class="project-meta-title" title="双击编辑项目名">${esc(project.title)}</div>
         <div class="project-meta-actions">
           <span class="status-badge" data-status="${esc(project.status)}">${esc(project.status)}</span>
+          ${project.status === '已完成' || project.status === '已归档'
+            ? '<button class="reopen-project-btn" id="reopenProjectBtn">重新开启</button>'
+            : '<button class="complete-project-btn" id="completeProjectBtn">✓ 完成项目</button>'}
           <button class="icon-btn" id="editProjectBtn">⚙ 项目信息</button>
         </div>
       </div>
@@ -1852,6 +1921,29 @@ function renderProjectMeta(project) {
 
   // Edit button
   metaEl.querySelector('#editProjectBtn').addEventListener('click', () => openProjectSettings(project));
+
+  // Complete / Reopen button
+  const completeBtn = metaEl.querySelector('#completeProjectBtn');
+  if (completeBtn) {
+    completeBtn.addEventListener('click', () => {
+      if (!confirm(`确定将「${project.title}」标记为已完成吗？`)) return;
+      project.status = '已完成';
+      SFX.sectionComplete();
+      launchConfetti();
+      saveState();
+      render();
+    });
+  }
+  const reopenBtn = metaEl.querySelector('#reopenProjectBtn');
+  if (reopenBtn) {
+    reopenBtn.addEventListener('click', () => {
+      if (!confirm(`确定重新开启「${project.title}」吗？`)) return;
+      project.status = '进行中';
+      SFX.click();
+      saveState();
+      render();
+    });
+  }
 }
 
 function renderModuleTabs(project) {
