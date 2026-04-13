@@ -10,6 +10,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>工作流检查单</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -133,6 +135,54 @@ body {
   padding: 12px;
   border-top: 1px solid var(--border);
 }
+
+.sidebar-footer .btn + .btn { margin-top: 6px; }
+
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 6px 12px 0;
+}
+.sync-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #888;
+  flex-shrink: 0;
+}
+.sync-dot.connected { background: #2ecc71; }
+.sync-dot.syncing { background: #f1c40f; animation: pulse-dot 1s infinite; }
+.sync-dot.error { background: #e74c3c; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* Sync modal form */
+.sync-form label { display: block; font-size: 12px; color: var(--text-muted); margin: 10px 0 4px; }
+.sync-form input[type="text"] {
+  width: 100%; padding: 8px 10px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-size: 13px;
+}
+.sync-form input[type="text"]:focus { outline: none; border-color: var(--accent); }
+.sync-form .hint { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.sync-instructions {
+  background: rgba(200,164,78,0.08); border: 1px solid rgba(200,164,78,0.2);
+  border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; font-size: 12px; line-height: 1.7;
+  color: var(--text-dim);
+}
+.sync-instructions b { color: var(--accent); }
+.sync-instructions ol { padding-left: 18px; }
+.sync-connected-info {
+  text-align: center; padding: 16px 0;
+}
+.sync-connected-info .big-check { font-size: 40px; margin-bottom: 8px; }
+.sync-connected-info .connected-text { color: #2ecc71; font-size: 15px; font-weight: 600; }
+.sync-connected-info .db-url { font-size: 11px; color: var(--text-muted); margin-top: 6px; word-break: break-all; }
+.sync-disconnect-btn {
+  margin-top: 14px; padding: 8px 20px; border-radius: 6px;
+  border: 1px solid rgba(231,76,60,0.4); background: none; color: #e74c3c;
+  cursor: pointer; font-size: 13px; transition: all 0.2s;
+}
+.sync-disconnect-btn:hover { background: rgba(231,76,60,0.15); }
 
 .btn {
   display: flex;
@@ -1180,8 +1230,10 @@ body {
     <h2>项目列表</h2>
   </div>
   <div class="sidebar-list" id="sidebarList"></div>
+  <div id="syncStatus"></div>
   <div class="sidebar-footer">
     <button class="btn" id="newProjectBtn">+ 新建项目</button>
+    <button class="btn" id="syncSettingsBtn">☁ 云同步</button>
   </div>
 </aside>
 
@@ -1216,6 +1268,17 @@ body {
     <div class="modal-actions">
       <button class="cancel-btn" id="modulePickerCancel">取消</button>
       <button class="confirm-btn" id="modulePickerConfirm">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cloud Sync Settings Modal -->
+<div class="modal-overlay" id="syncOverlay">
+  <div class="modal">
+    <h3>☁ 云同步设置</h3>
+    <div id="syncModalBody"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="cancel-btn" id="syncModalClose">关闭</button>
     </div>
   </div>
 </div>
@@ -2793,6 +2856,215 @@ function launchConfetti() {
   requestAnimationFrame(draw);
 }
 
+// ===== Cloud Sync (Firebase) =====
+const SYNC_CONFIG_KEY = 'workflow-sync-config';
+let syncDb = null;
+let syncRef = null;
+let syncListener = null;
+let syncStatus = 'disconnected'; // disconnected | connected | syncing | error
+let _skipNextRemote = false; // prevent echo after local save
+
+function getSyncConfig() {
+  try { return JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)); } catch(e) { return null; }
+}
+
+function setSyncConfig(cfg) {
+  localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(cfg));
+}
+
+function clearSyncConfig() {
+  localStorage.removeItem(SYNC_CONFIG_KEY);
+}
+
+function updateSyncStatus(status) {
+  syncStatus = status;
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (status === 'disconnected') {
+    el.innerHTML = '';
+    return;
+  }
+  const labels = { connected: '已同步', syncing: '同步中…', error: '同步失败' };
+  el.innerHTML = `<div class="sync-status"><span class="sync-dot ${status}"></span>${labels[status] || ''}</div>`;
+}
+
+function connectFirebase(config) {
+  try {
+    // Avoid reinitializing if already connected with same config
+    if (syncDb) {
+      try { firebase.app().delete(); } catch(e) {}
+      syncDb = null;
+      syncRef = null;
+      if (syncListener) syncListener();
+      syncListener = null;
+    }
+    const app = firebase.initializeApp(config);
+    syncDb = firebase.database();
+    syncRef = syncDb.ref('checklistData');
+
+    // Listen for remote changes
+    syncListener = syncRef.on('value', (snap) => {
+      if (_skipNextRemote) { _skipNextRemote = false; return; }
+      const remoteData = snap.val();
+      if (remoteData && remoteData.projects) {
+        // Merge: use remote data
+        state = remoteData;
+        state.projects.forEach(p => migrateProject(p));
+        if (!state.activeProjectId && state.projects.length > 0) {
+          state.activeProjectId = state.projects[0].id;
+        }
+        // Save locally too
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        render();
+      }
+      updateSyncStatus('connected');
+    }, (err) => {
+      console.error('Sync error:', err);
+      updateSyncStatus('error');
+    });
+
+    // Monitor connection state
+    firebase.database().ref('.info/connected').on('value', (snap) => {
+      updateSyncStatus(snap.val() ? 'connected' : 'disconnected');
+    });
+
+    updateSyncStatus('connected');
+    setSyncConfig(config);
+    return true;
+  } catch(e) {
+    console.error('Firebase init error:', e);
+    updateSyncStatus('error');
+    return false;
+  }
+}
+
+function disconnectFirebase() {
+  if (syncListener && syncRef) {
+    syncRef.off('value', syncListener);
+    syncListener = null;
+  }
+  try { firebase.app().delete(); } catch(e) {}
+  syncDb = null;
+  syncRef = null;
+  clearSyncConfig();
+  updateSyncStatus('disconnected');
+}
+
+function pushToCloud() {
+  if (!syncRef) return;
+  _skipNextRemote = true;
+  updateSyncStatus('syncing');
+  syncRef.set(state).then(() => {
+    updateSyncStatus('connected');
+  }).catch((err) => {
+    console.error('Push error:', err);
+    _skipNextRemote = false;
+    updateSyncStatus('error');
+  });
+}
+
+// Patch saveState to also push to cloud
+const _origSaveState = saveState;
+saveState = function() {
+  _origSaveState();
+  pushToCloud();
+};
+
+// Sync modal UI
+function openSyncSettings() {
+  document.getElementById('syncOverlay').classList.add('active');
+  renderSyncModal();
+}
+
+function closeSyncSettings() {
+  document.getElementById('syncOverlay').classList.remove('active');
+}
+
+function renderSyncModal() {
+  const body = document.getElementById('syncModalBody');
+  const config = getSyncConfig();
+  const isConnected = !!syncDb;
+
+  if (isConnected && config) {
+    body.innerHTML = `
+      <div class="sync-connected-info">
+        <div class="big-check">✅</div>
+        <div class="connected-text">云同步已开启</div>
+        <div class="db-url">${esc(config.databaseURL || '')}</div>
+        <button class="sync-disconnect-btn" id="syncDisconnectBtn">断开同步</button>
+        <div style="margin-top:16px;">
+          <button class="confirm-btn" id="syncPushBtn" style="width:100%">立即上传当前数据</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('syncDisconnectBtn').addEventListener('click', () => {
+      if (!confirm('断开后此设备将不再同步，本地数据保留。确定？')) return;
+      disconnectFirebase();
+      renderSyncModal();
+    });
+    document.getElementById('syncPushBtn').addEventListener('click', () => {
+      pushToCloud();
+      SFX.check();
+      closeSyncSettings();
+    });
+  } else {
+    body.innerHTML = `
+      <div class="sync-instructions">
+        <b>首次设置（免费，约 3 分钟）：</b>
+        <ol>
+          <li>打开 <b>console.firebase.google.com</b></li>
+          <li>创建一个项目（名称随意，如 "我的检查单"）</li>
+          <li>进入项目 → 左侧 <b>构建 → Realtime Database</b> → 创建数据库 → 选 <b>测试模式</b></li>
+          <li>点左上 ⚙ → <b>项目设置</b> → 滚到底部 "您的应用" → 点 <b>Web（&lt;/&gt;）</b> 图标注册应用</li>
+          <li>复制下方三个值粘贴到对应输入框</li>
+        </ol>
+        <div style="margin-top:6px;">所有设备填同样的配置即可自动同步。</div>
+      </div>
+      <div class="sync-form">
+        <label>API Key</label>
+        <input type="text" id="syncApiKey" placeholder="AIzaSy...">
+        <label>Database URL</label>
+        <input type="text" id="syncDbUrl" placeholder="https://xxx-default-rtdb.firebaseio.com">
+        <div class="hint">在 Realtime Database 页面顶部可以看到此 URL</div>
+        <label>Project ID</label>
+        <input type="text" id="syncProjectId" placeholder="my-checklist-12345">
+      </div>
+      <div style="margin-top:14px;">
+        <button class="confirm-btn" id="syncConnectBtn" style="width:100%">连接</button>
+      </div>
+    `;
+    document.getElementById('syncConnectBtn').addEventListener('click', () => {
+      const apiKey = document.getElementById('syncApiKey').value.trim();
+      const dbUrl = document.getElementById('syncDbUrl').value.trim();
+      const projectId = document.getElementById('syncProjectId').value.trim();
+      if (!apiKey || !dbUrl) {
+        alert('请至少填写 API Key 和 Database URL');
+        return;
+      }
+      const config = {
+        apiKey: apiKey,
+        databaseURL: dbUrl,
+        projectId: projectId || undefined,
+      };
+      const ok = connectFirebase(config);
+      if (ok) {
+        // Push current local data to cloud on first connect
+        pushToCloud();
+        SFX.sectionComplete();
+        renderSyncModal();
+      } else {
+        alert('连接失败，请检查配置是否正确');
+      }
+    });
+  }
+}
+
+document.getElementById('syncSettingsBtn').addEventListener('click', openSyncSettings);
+document.getElementById('syncModalClose').addEventListener('click', closeSyncSettings);
+document.getElementById('syncOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeSyncSettings();
+});
+
 // ===== Init =====
 loadState();
 // If there's no active project but some exist, pick the first
@@ -2800,6 +3072,12 @@ if (!state.activeProjectId && state.projects.length > 0) {
   state.activeProjectId = state.projects[0].id;
 }
 render();
+
+// Auto-reconnect to Firebase if previously configured
+const _savedSyncConfig = getSyncConfig();
+if (_savedSyncConfig) {
+  connectFirebase(_savedSyncConfig);
+}
 
 // ===== PWA Service Worker =====
 if ('serviceWorker' in navigator) {
