@@ -2471,7 +2471,7 @@ function renderGrid({ wrapId, store, columns, statsFn, matchFn, filters, header,
         if (col.edit !== false) {
           makeCellEditable(td, {
             getValue: () => rec[col.key],
-            setValue: (nv) => { rec[col.key] = nv; saveState(); render(); },
+            setValue: (nv) => { rec[col.key] = nv; if (col.afterSet) col.afterSet(rec, nv); saveState(); render(); },
             type: col.type || 'text',
             options: col.options,
           });
@@ -2592,7 +2592,7 @@ function renderArchive() {
     store: state.archive,
     columns: [
       { key: 'name', label: '项目名称', type: 'text' },
-      { key: 'amount', label: '金额', type: 'number', align: 'right', render: (v) => `<span style="font-weight:600; color:var(--accent)">${fmtAmount(v)}</span>` },
+      { key: 'amount', label: '金额', type: 'number', align: 'right', render: (v) => `<span style="font-weight:600; color:var(--accent)">${fmtAmount(v)}</span>`, afterSet: (rec, nv) => { if (nv !== null && nv !== '' && Number(nv) > 0) rec.status = '已收款'; } },
       { key: 'status', label: '状态', type: 'select', options: ['已收款', '未收款', '部分收款', '待开票'], render: statusPill },
       { key: 'date', label: '日期', type: 'date' },
       { key: 'client', label: '客户', type: 'text' },
