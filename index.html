@@ -2092,9 +2092,20 @@ function ensureArchive() {
       sort: { key: 'order', dir: 'asc' },
     };
   }
-  if (!state.callsheets) state.callsheets = { records: [], sort: { key: 'date', dir: 'desc' } };
-  if (!state.shotlogs) state.shotlogs = { records: [], sort: { key: 'date', dir: 'desc' } };
-  if (!state.equipment) state.equipment = { records: [], sort: { key: 'name', dir: 'asc' } };
+  const ensureStore = (k, defaultSort) => {
+    if (!state[k] || typeof state[k] !== 'object') state[k] = {};
+    if (!Array.isArray(state[k].records)) state[k].records = [];
+    if (!state[k].sort || typeof state[k].sort !== 'object') state[k].sort = defaultSort;
+  };
+  ensureStore('callsheets', { key: 'date', dir: 'desc' });
+  ensureStore('shotlogs', { key: 'date', dir: 'desc' });
+  ensureStore('equipment', { key: 'name', dir: 'asc' });
+  // Also harden archive
+  if (!Array.isArray(state.archive?.records)) {
+    state.archive = state.archive || {};
+    state.archive.records = state.archive?.records || [];
+  }
+  if (!state.archive.sort) state.archive.sort = { key: 'order', dir: 'asc' };
 }
 
 function genIdFor(seed) {
@@ -2399,8 +2410,10 @@ const gridFilters = {
 
 // Generic grid renderer — builds stats + toolbar + editable table/cards
 function renderGrid({ wrapId, store, columns, statsFn, matchFn, filters, header, addNew, extraToolbar }) {
+  ensureArchive();
   const wrap = document.getElementById(wrapId);
-  const recs = store.records || [];
+  const recs = (store && store.records) || [];
+  if (store && !store.sort) store.sort = { key: columns[0]?.key || 'id', dir: 'asc' };
   let view = recs.slice();
   if (matchFn) view = view.filter(r => matchFn(r, filters));
 
@@ -3514,6 +3527,7 @@ function saveWizardStep1() {
 }
 
 document.getElementById('newProjectBtn').addEventListener('click', () => {
+  ensureArchive();
   if (state.view === 'archive') state.archive.records.unshift({ id: genId(), name: '新项目', amount: null, status: '未收款', date: todayISO(), client: '', type: '', note: '' });
   else if (state.view === 'callsheet') state.callsheets.records.unshift({ id: genId(), date: todayISO(), project: '', location: '', callTime: '08:00', wrapTime: '18:00', scenes: '', crew: '', note: '' });
   else if (state.view === 'shotlog') state.shotlogs.records.unshift({ id: genId(), date: todayISO(), project: '', scene: '', shot: '', take: '1', take_ok: '', frame: '', lens: '', tc_in: '', tc_out: '', note: '' });
