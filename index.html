@@ -1198,6 +1198,317 @@ body {
   gap: 8px;
 }
 
+/* ===== View Switcher (sidebar top) ===== */
+.view-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.view-tab {
+  padding: 8px 6px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.view-tab:hover { color: var(--text); }
+.view-tab.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(200,164,78,0.3);
+}
+
+/* Inline editable cells */
+.cell-edit {
+  cursor: text;
+  position: relative;
+}
+.cell-edit.cell-select { cursor: pointer; }
+.cell-edit:hover {
+  background: rgba(200,164,78,0.06);
+  outline: 1px solid rgba(200,164,78,0.3);
+  outline-offset: -1px;
+}
+.cell-edit.cell-empty { color: var(--text-muted); font-style: italic; }
+.inline-edit-input {
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+.inline-edit-input[type="number"] { text-align: right; }
+
+/* ===== Archive View ===== */
+.archive-wrap { padding: 20px 32px 80px; }
+
+.archive-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.archive-title {
+  font-size: 22px;
+  font-weight: 700;
+}
+.archive-title-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.archive-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.stat-card .stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+}
+.stat-card .stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+.stat-card.accent .stat-value { color: var(--accent); }
+.stat-card.success .stat-value { color: var(--success); }
+.stat-card.danger .stat-value { color: var(--danger); }
+
+.archive-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.archive-search {
+  flex: 1;
+  min-width: 180px;
+  padding: 8px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.archive-search:focus { border-color: var(--accent); }
+.archive-filter {
+  padding: 8px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+.archive-filter:focus { border-color: var(--accent); }
+.archive-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.archive-btn:hover { border-color: var(--accent); color: var(--accent); }
+.archive-btn.primary {
+  background: var(--accent);
+  color: #111;
+  font-weight: 600;
+  border-color: var(--accent);
+}
+.archive-btn.primary:hover { opacity: 0.9; color: #111; }
+
+.archive-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.archive-table th {
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+  cursor: pointer;
+  user-select: none;
+}
+.archive-table th:hover { color: var(--text); }
+.archive-table th .sort-arrow {
+  display: inline-block;
+  margin-left: 4px;
+  opacity: 0.5;
+  font-size: 10px;
+}
+.archive-table th.sort-active .sort-arrow { opacity: 1; color: var(--accent); }
+.archive-table td {
+  padding: 12px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.archive-table tr:last-child td { border-bottom: none; }
+.archive-table tr:hover td { background: var(--hover); }
+.archive-table .amount-cell { font-weight: 600; color: var(--accent); text-align: right; }
+.archive-table .amount-cell.empty { color: var(--text-muted); font-weight: normal; }
+.archive-table .status-cell { white-space: nowrap; }
+.archive-table .row-actions {
+  opacity: 0;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  transition: opacity 0.15s;
+}
+.archive-table tr:hover .row-actions { opacity: 1; }
+.row-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.row-action-btn:hover { color: var(--accent); background: var(--hover); }
+.row-action-btn.delete:hover { color: var(--danger); }
+
+.status-pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-pill.paid { background: rgba(46,204,113,0.15); color: var(--success); }
+.status-pill.unpaid { background: rgba(231,76,60,0.15); color: var(--danger); }
+.status-pill.partial { background: rgba(241,196,15,0.18); color: #f1c40f; }
+
+.archive-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Archive card layout (mobile) */
+.archive-cards { display: none; }
+.archive-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.archive-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.archive-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  word-break: break-word;
+}
+.archive-card-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.archive-card-amount.empty { color: var(--text-muted); font-weight: normal; font-size: 14px; }
+.archive-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+.archive-card-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.archive-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* Archive form modal */
+.archive-form label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 10px 0 4px;
+}
+.archive-form input, .archive-form select, .archive-form textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+}
+.archive-form input:focus, .archive-form select:focus, .archive-form textarea:focus {
+  border-color: var(--accent);
+}
+.archive-form textarea { resize: vertical; min-height: 60px; }
+.archive-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -1217,6 +1528,10 @@ body {
   .overlay.active { display: block; }
   .main-header { padding: 24px 16px 16px 56px; }
   .content { padding: 0 16px 80px; }
+  .archive-wrap { padding: 20px 16px 80px 56px; }
+  .archive-table { display: none; }
+  .archive-cards { display: block; }
+  .archive-form-row { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -1227,7 +1542,14 @@ body {
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-header">
-    <h2>项目列表</h2>
+    <h2 id="sidebarHeading">项目列表</h2>
+  </div>
+  <div class="view-switcher">
+    <button class="view-tab active" data-view="workflow">📋 进行中</button>
+    <button class="view-tab" data-view="archive">📊 档案</button>
+    <button class="view-tab" data-view="callsheet">📅 通告</button>
+    <button class="view-tab" data-view="shotlog">🎬 场记</button>
+    <button class="view-tab" data-view="equipment">🎥 器材</button>
   </div>
   <div class="sidebar-list" id="sidebarList"></div>
   <div id="syncStatus"></div>
@@ -1238,10 +1560,24 @@ body {
 </aside>
 
 <main class="main" id="main">
-  <div class="project-meta" id="projectMeta"></div>
-  <div class="module-tabs-bar" id="moduleTabsBar"></div>
-  <div class="main-header" id="mainHeader"></div>
-  <div class="content" id="content"></div>
+  <div id="workflowView">
+    <div class="project-meta" id="projectMeta"></div>
+    <div class="module-tabs-bar" id="moduleTabsBar"></div>
+    <div class="main-header" id="mainHeader"></div>
+    <div class="content" id="content"></div>
+  </div>
+  <div id="archiveView" style="display:none">
+    <div class="archive-wrap" id="archiveWrap"></div>
+  </div>
+  <div id="callsheetView" style="display:none">
+    <div class="archive-wrap" id="callsheetWrap"></div>
+  </div>
+  <div id="shotlogView" style="display:none">
+    <div class="archive-wrap" id="shotlogWrap"></div>
+  </div>
+  <div id="equipmentView" style="display:none">
+    <div class="archive-wrap" id="equipmentWrap"></div>
+  </div>
 </main>
 
 <!-- Project Wizard Modal (new project / edit settings) -->
@@ -1677,9 +2013,42 @@ const TEMPLATES = {
   }
 };
 
+// ===== Archive Seed (from Excel 项目收款汇总.xlsx) =====
+const ARCHIVE_SEED = [
+  { name: '亚运会解说比赛', amount: 500, status: '已收款' },
+  { name: '青岛电视台', amount: 300, status: '已收款' },
+  { name: '香格里拉评委', amount: 200, status: '已收款' },
+  { name: '齐越节', amount: 200, status: '已收款' },
+  { name: '蜜獾体育', amount: 1200, status: '已收款' },
+  { name: '短剧二创', amount: 1000, status: '已收款' },
+  { name: '牛奶姐比赛', amount: 500, status: '已收款' },
+  { name: '毕设 鲁绣', amount: 1000, status: '已收款' },
+  { name: '毕设 木偶', amount: 1000, status: '已收款' },
+  { name: '度假村宣传片', amount: 500, status: '已收款' },
+  { name: '青岛戏曲', amount: 300, status: '已收款' },
+  { name: '国泰乒羽', amount: 900, status: '已收款' },
+  { name: '济南女企业家 齐鲁制药，华熙生物，博科控股，磐升集团', amount: 700, status: '已收款' },
+  { name: '小孩mv', amount: 750, status: '已收款' },
+  { name: '新东方研学', amount: 600, status: '已收款' },
+  { name: '研学济南', amount: 300, status: '已收款' },
+  { name: '960宣传片', amount: 700, status: '已收款' },
+  { name: '婴儿博览会拍摄', amount: 560, status: '已收款' },
+  { name: '新东方滑雪研学', amount: 300, status: '已收款' },
+  { name: '新东方滑雪研学2', amount: 300, status: '已收款' },
+  { name: '海淀', amount: 300, status: '已收款' },
+  { name: '美术馆跨年', amount: 800, status: '已收款' },
+  { name: '威海城市快剪', amount: 1000, status: '已收款' },
+  { name: '青岛春晚', amount: null, status: '未收款' },
+  { name: '青岛技校会议', amount: 200, status: '已收款' },
+  { name: '毕设泰安', amount: null, status: '未收款' },
+  { name: '毕设萍萍', amount: null, status: '未收款' },
+  { name: '社区开会', amount: null, status: '未收款' },
+  { name: '约拍', amount: 300, status: '已收款' },
+];
+
 // ===== State =====
 const STORAGE_KEY = 'workflow-checklist-data';
-let state = { projects: [], activeProjectId: null };
+let state = { projects: [], activeProjectId: null, view: 'workflow', archive: null };
 
 // Template keys that can be used as modules in a project
 const MODULE_KEYS = ['preproduction', 'shooting', 'editing', 'distribution'];
@@ -1697,11 +2066,87 @@ function loadState() {
       state = JSON.parse(raw);
       // Migrate old format
       state.projects.forEach(p => migrateProject(p));
+      if (!state.view) state.view = 'workflow';
+      ensureArchive();
       return;
     }
   } catch(e) {}
   // Default: empty project list, user creates first project via wizard
-  state = { projects: [], activeProjectId: null };
+  state = { projects: [], activeProjectId: null, view: 'workflow', archive: null };
+  ensureArchive();
+}
+
+function ensureArchive() {
+  if (!state.archive || !Array.isArray(state.archive.records)) {
+    state.archive = {
+      records: ARCHIVE_SEED.map(r => ({
+        id: genIdFor(r.name),
+        name: r.name,
+        amount: r.amount,
+        status: r.status,
+        date: '',
+        type: '',
+        client: '',
+        note: '',
+      })),
+      sort: { key: 'order', dir: 'asc' },
+    };
+  }
+  if (!state.callsheets) state.callsheets = { records: [], sort: { key: 'date', dir: 'desc' } };
+  if (!state.shotlogs) state.shotlogs = { records: [], sort: { key: 'date', dir: 'desc' } };
+  if (!state.equipment) state.equipment = { records: [], sort: { key: 'name', dir: 'asc' } };
+}
+
+function genIdFor(seed) {
+  return (Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + (seed||'').length);
+}
+
+// ===== Generic inline-editable cell =====
+function makeCellEditable(td, { getValue, setValue, type = 'text', options, placeholder }) {
+  td.classList.add('cell-edit');
+  if (type === 'select') td.classList.add('cell-select');
+  td.addEventListener('click', (e) => {
+    if (td.querySelector('input, select')) return;
+    const cur = getValue();
+    let input;
+    if (type === 'select') {
+      input = document.createElement('select');
+      (options || []).forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o;
+        opt.textContent = o;
+        if (String(o) === String(cur ?? '')) opt.selected = true;
+        input.appendChild(opt);
+      });
+    } else {
+      input = document.createElement('input');
+      input.type = type === 'number' ? 'number' : (type === 'date' ? 'date' : 'text');
+      if (type === 'number') input.step = 'any';
+      input.value = (cur === null || cur === undefined) ? '' : cur;
+      if (placeholder) input.placeholder = placeholder;
+    }
+    input.className = 'inline-edit-input';
+    td.innerHTML = '';
+    td.appendChild(input);
+    input.focus();
+    if (input.select && type !== 'date') input.select();
+    let committed = false;
+    const commit = () => {
+      if (committed) return;
+      committed = true;
+      let v = input.value;
+      if (type === 'number') v = v === '' ? null : Number(v);
+      setValue(v);
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+      else if (ev.key === 'Escape') { committed = true; input.blur(); }
+    });
+    if (type === 'select') {
+      input.addEventListener('change', () => input.blur());
+    }
+  });
 }
 
 function saveState() {
@@ -1817,14 +2262,72 @@ function getActiveProject() {
 
 // ===== Rendering =====
 function render() {
+  applyView();
   renderSidebar();
-  renderMain();
+  if (state.view === 'archive') renderArchive();
+  else if (state.view === 'callsheet') renderCallsheet();
+  else if (state.view === 'shotlog') renderShotlog();
+  else if (state.view === 'equipment') renderEquipment();
+  else renderMain();
   saveState();
+}
+
+function applyView() {
+  const views = {
+    workflow: { el: 'workflowView', heading: '项目列表', addBtn: '+ 新建项目' },
+    archive: { el: 'archiveView', heading: '项目档案', addBtn: '+ 新增记录' },
+    callsheet: { el: 'callsheetView', heading: '通告单', addBtn: '+ 新增通告' },
+    shotlog: { el: 'shotlogView', heading: '场记', addBtn: '+ 新增场记' },
+    equipment: { el: 'equipmentView', heading: '器材清单', addBtn: '+ 新增器材' },
+  };
+  const newProjBtn = document.getElementById('newProjectBtn');
+  const heading = document.getElementById('sidebarHeading');
+  document.querySelectorAll('.view-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.view === state.view);
+  });
+  Object.entries(views).forEach(([k, v]) => {
+    const el = document.getElementById(v.el);
+    if (el) el.style.display = (state.view === k) ? '' : 'none';
+  });
+  const cur = views[state.view] || views.workflow;
+  if (newProjBtn) newProjBtn.textContent = cur.addBtn;
+  if (heading) heading.textContent = cur.heading;
 }
 
 function renderSidebar() {
   const list = document.getElementById('sidebarList');
   list.innerHTML = '';
+
+  if (state.view !== 'workflow') {
+    const summary = document.createElement('div');
+    summary.style.cssText = 'padding: 16px; color: var(--text-dim); font-size: 13px; line-height: 1.9;';
+    let html = `<div style="color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">概览</div>`;
+    if (state.view === 'archive') {
+      const recs = state.archive?.records || [];
+      const total = recs.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      const paid = recs.filter(r => r.status === '已收款').length;
+      const unpaid = recs.filter(r => r.status !== '已收款').length;
+      html += `
+        <div>共 <b style="color:var(--text)">${recs.length}</b> 个项目</div>
+        <div>已收款 <b style="color:var(--success)">${paid}</b> · 未收款 <b style="color:var(--danger)">${unpaid}</b></div>
+        <div style="margin-top:6px">收款总额 <b style="color:var(--accent)">¥${total.toLocaleString()}</b></div>`;
+    } else if (state.view === 'callsheet') {
+      const recs = state.callsheets?.records || [];
+      html += `<div>共 <b style="color:var(--text)">${recs.length}</b> 条通告</div>`;
+    } else if (state.view === 'shotlog') {
+      const recs = state.shotlogs?.records || [];
+      const ok = recs.filter(r => r.take_ok === 'OK').length;
+      html += `<div>共 <b style="color:var(--text)">${recs.length}</b> 条场记</div><div>OK: <b style="color:var(--success)">${ok}</b></div>`;
+    } else if (state.view === 'equipment') {
+      const recs = state.equipment?.records || [];
+      const owned = recs.filter(r => r.ownership === '自有').length;
+      const rented = recs.filter(r => r.ownership === '租赁').length;
+      html += `<div>共 <b style="color:var(--text)">${recs.length}</b> 件器材</div><div>自有 <b>${owned}</b> · 租赁 <b>${rented}</b></div>`;
+    }
+    summary.innerHTML = html;
+    list.appendChild(summary);
+    return;
+  }
 
   const isFinished = p => p.status === '已完成' || p.status === '已归档';
   const active = state.projects.filter(p => !isFinished(p));
@@ -1885,6 +2388,393 @@ function renderSidebar() {
   renderGroup('进行中', active);
   renderGroup('已完成', done);
 }
+
+// ===== Data Grids (档案/通告/场记/器材) =====
+const gridFilters = {
+  archive: { q: '', status: 'all' },
+  callsheet: { q: '' },
+  shotlog: { q: '' },
+  equipment: { q: '', type: 'all' },
+};
+
+// Generic grid renderer — builds stats + toolbar + editable table/cards
+function renderGrid({ wrapId, store, columns, statsFn, matchFn, filters, header, addNew, extraToolbar }) {
+  const wrap = document.getElementById(wrapId);
+  const recs = store.records || [];
+  let view = recs.slice();
+  if (matchFn) view = view.filter(r => matchFn(r, filters));
+
+  const sortKey = store.sort?.key;
+  const sortDir = store.sort?.dir || 'asc';
+  if (sortKey) {
+    view.sort((a, b) => {
+      let va = a[sortKey], vb = b[sortKey];
+      if (va === null || va === undefined) va = '';
+      if (vb === null || vb === undefined) vb = '';
+      if (typeof va === 'number' || typeof vb === 'number') { va = Number(va)||0; vb = Number(vb)||0; }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  const stats = statsFn ? statsFn(recs) : [];
+  const statsHtml = stats.length ? `<div class="archive-stats">${stats.map(s => `
+    <div class="stat-card ${s.color||''}">
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-value">${s.value}</div>
+    </div>`).join('')}</div>` : '';
+
+  const arrow = (k) => sortKey === k ? `<span class="sort-arrow">${sortDir === 'asc' ? '▲' : '▼'}</span>` : `<span class="sort-arrow">⇅</span>`;
+  const sortActive = (k) => sortKey === k ? ' sort-active' : '';
+
+  wrap.innerHTML = `
+    <div class="archive-header">
+      <div>
+        <div class="archive-title">${header.icon} ${header.title}</div>
+        <div class="archive-title-sub">${header.subtitle}</div>
+      </div>
+    </div>
+    ${statsHtml}
+    <div class="archive-toolbar">
+      <input type="text" class="archive-search" id="${wrapId}Search" placeholder="🔍 搜索..." value="${esc(filters.q || '')}">
+      ${extraToolbar || ''}
+      <button class="archive-btn" data-act="export">📥 导出CSV</button>
+      <button class="archive-btn primary" data-act="add">${header.addLabel || '+ 新增'}</button>
+    </div>
+    ${view.length === 0 ? `<div class="archive-empty">${recs.length === 0 ? '暂无记录，点击右上 "+" 新增一条' : '没有匹配的记录'}</div>` : `
+    <table class="archive-table">
+      <thead>
+        <tr>
+          ${columns.map(c => `<th data-sort="${c.key}" class="${sortActive(c.key)}" style="${c.width?'width:'+c.width+';':''}${c.align?'text-align:'+c.align+';':''}">${c.label} ${arrow(c.key)}</th>`).join('')}
+          <th style="width: 80px; cursor: default;"></th>
+        </tr>
+      </thead>
+      <tbody id="${wrapId}Tbody"></tbody>
+    </table>
+    <div class="archive-cards" id="${wrapId}Cards"></div>
+    `}
+  `;
+
+  // Render rows with editable cells
+  const tbody = document.getElementById(wrapId + 'Tbody');
+  const cards = document.getElementById(wrapId + 'Cards');
+  view.forEach(rec => {
+    if (tbody) {
+      const tr = document.createElement('tr');
+      tr.dataset.id = rec.id;
+      columns.forEach(col => {
+        const td = document.createElement('td');
+        if (col.align) td.style.textAlign = col.align;
+        const v = rec[col.key];
+        td.innerHTML = col.render ? col.render(v, rec) : (v ? esc(String(v)) : '<span style="color:var(--text-muted)">—</span>');
+        if (col.edit !== false) {
+          makeCellEditable(td, {
+            getValue: () => rec[col.key],
+            setValue: (nv) => { rec[col.key] = nv; saveState(); render(); },
+            type: col.type || 'text',
+            options: col.options,
+          });
+        }
+        tr.appendChild(td);
+      });
+      const actions = document.createElement('td');
+      actions.innerHTML = `<div class="row-actions"><button class="row-action-btn delete" data-act="delete">删除</button></div>`;
+      actions.querySelector('button').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!confirm('确定删除这条记录？')) return;
+        store.records = store.records.filter(r => r.id !== rec.id);
+        saveState();
+        render();
+      });
+      tr.appendChild(actions);
+      tbody.appendChild(tr);
+    }
+    if (cards) {
+      const card = document.createElement('div');
+      card.className = 'archive-card';
+      card.dataset.id = rec.id;
+      let inner = '';
+      columns.forEach(col => {
+        const v = rec[col.key];
+        const disp = col.render ? col.render(v, rec) : (v !== null && v !== undefined && v !== '' ? esc(String(v)) : '<span style="color:var(--text-muted)">—</span>');
+        inner += `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 0; border-bottom: 1px dashed var(--border);">
+          <span style="color:var(--text-muted); font-size:11px; text-transform:uppercase; letter-spacing:1px;">${col.label}</span>
+          <span data-field="${col.key}" class="${col.edit !== false ? 'cell-edit' : ''} ${col.type==='select'?'cell-select':''}" style="flex:1; text-align:right; padding:4px 6px; border-radius:4px;">${disp}</span>
+        </div>`;
+      });
+      inner += `<div class="archive-card-actions"><button class="row-action-btn delete" data-act="delete">删除记录</button></div>`;
+      card.innerHTML = inner;
+      columns.forEach(col => {
+        if (col.edit === false) return;
+        const span = card.querySelector(`[data-field="${col.key}"]`);
+        if (span) makeCellEditable(span, {
+          getValue: () => rec[col.key],
+          setValue: (nv) => { rec[col.key] = nv; saveState(); render(); },
+          type: col.type || 'text',
+          options: col.options,
+        });
+      });
+      card.querySelector('button[data-act="delete"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!confirm('确定删除这条记录？')) return;
+        store.records = store.records.filter(r => r.id !== rec.id);
+        saveState();
+        render();
+      });
+      cards.appendChild(card);
+    }
+  });
+
+  // Toolbar bindings
+  const search = document.getElementById(wrapId + 'Search');
+  if (search) {
+    search.addEventListener('input', (e) => {
+      filters.q = e.target.value;
+      render();
+      const s = document.getElementById(wrapId + 'Search');
+      if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); }
+    });
+  }
+  wrap.querySelectorAll('.archive-btn[data-act="add"]').forEach(b => b.addEventListener('click', addNew));
+  wrap.querySelectorAll('.archive-btn[data-act="export"]').forEach(b => b.addEventListener('click', () => exportGridCSV(header.title, columns, recs)));
+
+  // Sort bindings
+  wrap.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (store.sort.key === key) store.sort.dir = store.sort.dir === 'asc' ? 'desc' : 'asc';
+      else { store.sort.key = key; store.sort.dir = 'asc'; }
+      saveState();
+      render();
+    });
+  });
+}
+
+function exportGridCSV(title, columns, recs) {
+  const header = columns.map(c => c.label);
+  const rows = recs.map(r => columns.map(c => {
+    const v = r[c.key];
+    return (v === null || v === undefined) ? '' : v;
+  }));
+  const escapeCsv = (v) => {
+    const s = (v === null || v === undefined) ? '' : String(v);
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  };
+  const csv = '\uFEFF' + [header, ...rows].map(row => row.map(escapeCsv).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${title}_${todayISO()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function projectNameOptions() {
+  const names = new Set();
+  (state.projects || []).forEach(p => { if (p.title) names.add(p.title); });
+  (state.archive?.records || []).forEach(r => { if (r.name) names.add(r.name); });
+  return ['', ...Array.from(names)];
+}
+
+function renderArchive() {
+  const fmtAmount = (v) => (v === null || v === undefined || v === '') ? '<span style="color:var(--text-muted)">—</span>' : `¥${Number(v).toLocaleString()}`;
+  const statusPill = (s) => {
+    const cls = s === '已收款' ? 'paid' : (s === '部分收款' ? 'partial' : 'unpaid');
+    return `<span class="status-pill ${cls}">${esc(s || '未收款')}</span>`;
+  };
+  renderGrid({
+    wrapId: 'archiveWrap',
+    store: state.archive,
+    columns: [
+      { key: 'name', label: '项目名称', type: 'text' },
+      { key: 'amount', label: '金额', type: 'number', align: 'right', render: (v) => `<span style="font-weight:600; color:var(--accent)">${fmtAmount(v)}</span>` },
+      { key: 'status', label: '状态', type: 'select', options: ['已收款', '未收款', '部分收款', '待开票'], render: statusPill },
+      { key: 'date', label: '日期', type: 'date' },
+      { key: 'client', label: '客户', type: 'text' },
+      { key: 'type', label: '类型', type: 'text' },
+      { key: 'note', label: '备注', type: 'text' },
+    ],
+    statsFn: (recs) => {
+      const total = recs.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      const paid = recs.filter(r => r.status === '已收款');
+      const unpaid = recs.filter(r => r.status !== '已收款');
+      const paidSum = paid.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      return [
+        { label: '收款总额', value: `¥${total.toLocaleString()}`, color: 'accent' },
+        { label: '项目总数', value: recs.length },
+        { label: '已收款', value: `${paid.length} <span style="font-size:13px; color:var(--text-muted); font-weight:normal">/ ¥${paidSum.toLocaleString()}</span>`, color: 'success' },
+        { label: '未收款', value: unpaid.length, color: 'danger' },
+      ];
+    },
+    filters: gridFilters.archive,
+    matchFn: (r, f) => {
+      const q = (f.q||'').trim().toLowerCase();
+      if (q && !['name','client','type','note'].some(k => (r[k]||'').toLowerCase().includes(q))) return false;
+      if (f.status === 'paid' && r.status !== '已收款') return false;
+      if (f.status === 'unpaid' && r.status === '已收款') return false;
+      return true;
+    },
+    header: { icon: '📊', title: '项目档案', subtitle: '历史项目与收款记录汇总。点击任意单元格直接编辑。', addLabel: '+ 新增记录' },
+    addNew: () => {
+      state.archive.records.unshift({ id: genId(), name: '新项目', amount: null, status: '未收款', date: todayISO(), client: '', type: '', note: '' });
+      saveState();
+      render();
+    },
+    extraToolbar: `<select class="archive-filter" data-filter="status">
+      <option value="all" ${gridFilters.archive.status==='all'?'selected':''}>全部状态</option>
+      <option value="paid" ${gridFilters.archive.status==='paid'?'selected':''}>已收款</option>
+      <option value="unpaid" ${gridFilters.archive.status==='unpaid'?'selected':''}>未收款</option>
+    </select>`,
+  });
+  const sel = document.querySelector('#archiveWrap select[data-filter="status"]');
+  if (sel) sel.addEventListener('change', (e) => { gridFilters.archive.status = e.target.value; render(); });
+}
+
+// ===== Call Sheets (通告单) =====
+function renderCallsheet() {
+  renderGrid({
+    wrapId: 'callsheetWrap',
+    store: state.callsheets,
+    columns: [
+      { key: 'date', label: '日期', type: 'date', width: '120px' },
+      { key: 'project', label: '项目', type: 'text' },
+      { key: 'location', label: '地点', type: 'text' },
+      { key: 'callTime', label: '通告时间', type: 'text' },
+      { key: 'wrapTime', label: '收工', type: 'text' },
+      { key: 'scenes', label: '场次', type: 'text' },
+      { key: 'crew', label: '通告人员', type: 'text' },
+      { key: 'note', label: '备注', type: 'text' },
+    ],
+    statsFn: (recs) => [
+      { label: '总条数', value: recs.length, color: 'accent' },
+      { label: '未来通告', value: recs.filter(r => r.date && r.date >= todayISO()).length, color: 'success' },
+    ],
+    filters: gridFilters.callsheet,
+    matchFn: (r, f) => {
+      const q = (f.q||'').trim().toLowerCase();
+      if (!q) return true;
+      return ['date','project','location','scenes','crew','note'].some(k => (r[k]||'').toLowerCase().includes(q));
+    },
+    header: { icon: '📅', title: '通告单', subtitle: '每日拍摄通告，时间、地点、人员、场次一目了然。', addLabel: '+ 新增通告' },
+    addNew: () => {
+      state.callsheets.records.unshift({
+        id: genId(), date: todayISO(), project: '', location: '', callTime: '08:00',
+        wrapTime: '18:00', scenes: '', crew: '', note: ''
+      });
+      saveState();
+      render();
+    },
+  });
+}
+
+// ===== Shot Log (场记) =====
+function renderShotlog() {
+  const okRender = (v) => {
+    if (!v) return '<span style="color:var(--text-muted)">—</span>';
+    const color = v === 'OK' ? 'var(--success)' : (v === 'NG' ? 'var(--danger)' : '#f1c40f');
+    return `<span style="color:${color}; font-weight:600">${esc(v)}</span>`;
+  };
+  renderGrid({
+    wrapId: 'shotlogWrap',
+    store: state.shotlogs,
+    columns: [
+      { key: 'date', label: '日期', type: 'date', width: '110px' },
+      { key: 'project', label: '项目', type: 'text' },
+      { key: 'scene', label: '场', type: 'text', width: '70px' },
+      { key: 'shot', label: '镜', type: 'text', width: '70px' },
+      { key: 'take', label: 'Take', type: 'text', width: '70px' },
+      { key: 'take_ok', label: '评价', type: 'select', options: ['', 'OK', 'NG', '备'], render: okRender, width: '80px' },
+      { key: 'frame', label: '景别/角度', type: 'text' },
+      { key: 'lens', label: '镜头', type: 'text' },
+      { key: 'tc_in', label: '入点TC', type: 'text' },
+      { key: 'tc_out', label: '出点TC', type: 'text' },
+      { key: 'note', label: '备注', type: 'text' },
+    ],
+    statsFn: (recs) => {
+      const ok = recs.filter(r => r.take_ok === 'OK').length;
+      const ng = recs.filter(r => r.take_ok === 'NG').length;
+      return [
+        { label: '总条数', value: recs.length, color: 'accent' },
+        { label: 'OK', value: ok, color: 'success' },
+        { label: 'NG', value: ng, color: 'danger' },
+        { label: '项目数', value: new Set(recs.map(r => r.project).filter(Boolean)).size },
+      ];
+    },
+    filters: gridFilters.shotlog,
+    matchFn: (r, f) => {
+      const q = (f.q||'').trim().toLowerCase();
+      if (!q) return true;
+      return ['date','project','scene','shot','take','frame','lens','note'].some(k => (r[k]||'').toString().toLowerCase().includes(q));
+    },
+    header: { icon: '🎬', title: '场记', subtitle: '按镜头记录 Scene / Shot / Take / OK-NG / 时码。点击单元格直接编辑。', addLabel: '+ 新增场记' },
+    addNew: () => {
+      state.shotlogs.records.unshift({
+        id: genId(), date: todayISO(), project: '', scene: '', shot: '', take: '1',
+        take_ok: '', frame: '', lens: '', tc_in: '', tc_out: '', note: ''
+      });
+      saveState();
+      render();
+    },
+  });
+}
+
+// ===== Equipment (器材清单) =====
+function renderEquipment() {
+  renderGrid({
+    wrapId: 'equipmentWrap',
+    store: state.equipment,
+    columns: [
+      { key: 'name', label: '名称', type: 'text' },
+      { key: 'category', label: '类型', type: 'select', options: ['', '机身', '镜头', '稳定器', '灯光', '收音', '监视器', '存储', '配件', '其他'] },
+      { key: 'brand', label: '品牌型号', type: 'text' },
+      { key: 'serial', label: '序列号', type: 'text' },
+      { key: 'ownership', label: '所有权', type: 'select', options: ['自有', '租赁', '借用'] },
+      { key: 'status', label: '状态', type: 'select', options: ['在库', '在用', '维修中', '遗失'] },
+      { key: 'purchaseDate', label: '购入日期', type: 'date' },
+      { key: 'value', label: '价值', type: 'number', align: 'right', render: (v) => v ? `¥${Number(v).toLocaleString()}` : '<span style="color:var(--text-muted)">—</span>' },
+      { key: 'note', label: '备注', type: 'text' },
+    ],
+    statsFn: (recs) => {
+      const total = recs.reduce((s, r) => s + (Number(r.value) || 0), 0);
+      const inUse = recs.filter(r => r.status === '在用').length;
+      const repair = recs.filter(r => r.status === '维修中').length;
+      return [
+        { label: '器材总数', value: recs.length, color: 'accent' },
+        { label: '总价值', value: `¥${total.toLocaleString()}`, color: 'success' },
+        { label: '在用', value: inUse },
+        { label: '维修中', value: repair, color: 'danger' },
+      ];
+    },
+    filters: gridFilters.equipment,
+    matchFn: (r, f) => {
+      const q = (f.q||'').trim().toLowerCase();
+      if (q && !['name','category','brand','serial','note'].some(k => (r[k]||'').toLowerCase().includes(q))) return false;
+      if (f.type && f.type !== 'all' && r.category !== f.type) return false;
+      return true;
+    },
+    header: { icon: '🎥', title: '器材清单', subtitle: '自有与租赁器材台账，状态、序列号、价值齐全。', addLabel: '+ 新增器材' },
+    addNew: () => {
+      state.equipment.records.unshift({
+        id: genId(), name: '新器材', category: '', brand: '', serial: '',
+        ownership: '自有', status: '在库', purchaseDate: '', value: null, note: ''
+      });
+      saveState();
+      render();
+    },
+    extraToolbar: `<select class="archive-filter" data-filter="type">
+      <option value="all" ${gridFilters.equipment.type==='all'?'selected':''}>全部类型</option>
+      ${['机身','镜头','稳定器','灯光','收音','监视器','存储','配件','其他'].map(c => `<option value="${c}" ${gridFilters.equipment.type===c?'selected':''}>${c}</option>`).join('')}
+    </select>`,
+  });
+  const sel = document.querySelector('#equipmentWrap select[data-filter="type"]');
+  if (sel) sel.addEventListener('change', (e) => { gridFilters.equipment.type = e.target.value; render(); });
+}
+
 
 function renderMain() {
   const project = getActiveProject();
@@ -2623,7 +3513,25 @@ function saveWizardStep1() {
   };
 }
 
-document.getElementById('newProjectBtn').addEventListener('click', () => openWizard('create'));
+document.getElementById('newProjectBtn').addEventListener('click', () => {
+  if (state.view === 'archive') state.archive.records.unshift({ id: genId(), name: '新项目', amount: null, status: '未收款', date: todayISO(), client: '', type: '', note: '' });
+  else if (state.view === 'callsheet') state.callsheets.records.unshift({ id: genId(), date: todayISO(), project: '', location: '', callTime: '08:00', wrapTime: '18:00', scenes: '', crew: '', note: '' });
+  else if (state.view === 'shotlog') state.shotlogs.records.unshift({ id: genId(), date: todayISO(), project: '', scene: '', shot: '', take: '1', take_ok: '', frame: '', lens: '', tc_in: '', tc_out: '', note: '' });
+  else if (state.view === 'equipment') state.equipment.records.unshift({ id: genId(), name: '新器材', category: '', brand: '', serial: '', ownership: '自有', status: '在库', purchaseDate: '', value: null, note: '' });
+  else return openWizard('create');
+  saveState();
+  render();
+});
+
+// View switcher tabs
+document.querySelectorAll('.view-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    state.view = tab.dataset.view;
+    render();
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('active');
+  });
+});
 
 document.getElementById('wizardCancel').addEventListener('click', closeWizard);
 document.getElementById('wizardOverlay').addEventListener('click', (e) => {
@@ -2913,6 +3821,8 @@ function connectFirebase(config) {
         if (!state.activeProjectId && state.projects.length > 0) {
           state.activeProjectId = state.projects[0].id;
         }
+        if (!state.view) state.view = 'workflow';
+        ensureArchive();
         // Save locally too
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         render();
