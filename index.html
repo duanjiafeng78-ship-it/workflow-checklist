@@ -1253,6 +1253,35 @@ body {
 }
 .inline-edit-input[type="number"] { text-align: right; }
 
+/* Star rating */
+.star-bar {
+  position: relative;
+  display: inline-block;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  letter-spacing: 1px;
+  vertical-align: middle;
+}
+.star-bar-bg { color: #4a4a4a; }
+.star-bar-fg {
+  color: #ffc94d;
+  position: absolute;
+  top: 0; left: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+  text-shadow: 0 0 6px rgba(255,201,77,0.4);
+}
+.star-bar:hover .star-bar-bg { color: #5a5a5a; }
+.star-num {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
 /* Calendar */
 .calendar-wrap { padding: 16px 20px 40px; }
 .cal-toolbar {
@@ -3650,6 +3679,26 @@ function projectNameOptions() {
   return ['', ...Array.from(names)];
 }
 
+function renderStarBar(rating, recId) {
+  const r = Math.max(0, Math.min(5, Number(rating) || 0));
+  const pct = (r / 5) * 100;
+  return `<div class="star-bar" data-rec="${recId}" data-rating="${r}" title="点击设置评分（左半=半星，右半=整星，再点同位置=清除）">
+    <span class="star-bar-bg">★★★★★</span>
+    <span class="star-bar-fg" style="width: ${pct}%">★★★★★</span>
+    ${r ? `<span class="star-num">${r.toFixed(1)}</span>` : ''}
+  </div>`;
+}
+
+function suggestAmountForRating(rec, rating) {
+  if (!rating || rating <= 0) return null;
+  const recs = state.archive?.records || [];
+  const sim = recs.filter(o => o.id !== rec.id && Math.abs((Number(o.rating)||0) - rating) <= 0.5 && o.amount && Number(o.amount) > 0);
+  if (sim.length === 0) return null;
+  const sum = sim.reduce((s, o) => s + Number(o.amount), 0);
+  const avg = Math.round(sum / sim.length);
+  return { avg, count: sim.length };
+}
+
 function renderArchive() {
   const fmtAmount = (v) => (v === null || v === undefined || v === '') ? '<span style="color:var(--text-muted)">—</span>' : `¥${Number(v).toLocaleString()}`;
   const statusPill = (s) => {
@@ -3662,6 +3711,8 @@ function renderArchive() {
     columns: [
       { key: 'name', label: '项目名称', type: 'text' },
       { key: 'amount', label: '金额', type: 'number', align: 'right', render: (v) => `<span style="font-weight:600; color:var(--accent)">${fmtAmount(v)}</span>`, afterSet: (rec, nv) => { if (nv !== null && nv !== '' && Number(nv) > 0) rec.status = '已收款'; } },
+      { key: 'rating', label: '评分', edit: false, width: '170px',
+        render: (v, rec) => renderStarBar(v, rec.id) },
       { key: 'status', label: '状态', type: 'select', options: ['已收款', '未收款', '部分收款', '待开票'], render: statusPill },
       { key: 'date', label: '日期', type: 'date' },
       { key: 'client', label: '客户', type: 'text' },
@@ -3683,12 +3734,15 @@ function renderArchive() {
       const paid = filtered.filter(r => r.status === '已收款');
       const unpaid = filtered.filter(r => r.status !== '已收款');
       const paidSum = paid.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      const rated = filtered.filter(r => Number(r.rating) > 0);
+      const avgRating = rated.length ? (rated.reduce((s, r) => s + Number(r.rating), 0) / rated.length) : 0;
       const scope = f.year !== 'all' ? `${f.year}年` : (f.client !== 'all' ? f.client : '全部');
       return [
         { label: `${scope}·收款总额`, value: `¥${total.toLocaleString()}`, color: 'accent' },
         { label: '项目数', value: filtered.length },
         { label: '已收款', value: `${paid.length} <span style="font-size:13px; color:var(--text-muted); font-weight:normal">/ ¥${paidSum.toLocaleString()}</span>`, color: 'success' },
         { label: '未收款', value: unpaid.length, color: 'danger' },
+        { label: '平均评分', value: rated.length ? `${avgRating.toFixed(1)} <span style="font-size:11px; color:var(--text-muted); font-weight:normal">★ / ${rated.length}条</span>` : '<span style="color:var(--text-muted); font-size:14px">未评分</span>' },
       ];
     },
     filters: gridFilters.archive,
@@ -3703,7 +3757,7 @@ function renderArchive() {
     },
     header: { icon: '📊', title: '项目档案', subtitle: '历史项目与收款记录汇总。点击任意单元格直接编辑。', addLabel: '+ 新增记录' },
     addNew: () => {
-      state.archive.records.unshift({ id: genId(), name: '新项目', amount: null, status: '未收款', date: todayISO(), client: '', type: '', note: '' });
+      state.archive.records.unshift({ id: genId(), name: '新项目', amount: null, status: '未收款', date: todayISO(), client: '', type: '', note: '', rating: 0 });
       saveState();
       render();
     },
@@ -5145,7 +5199,7 @@ function saveWizardStep1() {
 
 document.getElementById('newProjectBtn').addEventListener('click', () => {
   ensureArchive();
-  if (state.view === 'archive') state.archive.records.unshift({ id: genId(), name: '新项目', amount: null, status: '未收款', date: todayISO(), client: '', type: '', note: '' });
+  if (state.view === 'archive') state.archive.records.unshift({ id: genId(), name: '新项目', amount: null, status: '未收款', date: todayISO(), client: '', type: '', note: '', rating: 0 });
   else if (state.view === 'callsheet') state.callsheets.records.unshift({ id: genId(), date: todayISO(), project: '', location: '', callTime: '08:00', wrapTime: '18:00', scenes: '', crew: '', note: '' });
   else if (state.view === 'shotlog') state.shotlogs.records.unshift({ id: genId(), date: todayISO(), project: '', scene: '', shot: '', take: '1', take_ok: '', frame: '', lens: '', tc_in: '', tc_out: '', note: '' });
   else if (state.view === 'equipment') state.equipment.records.unshift({ id: genId(), name: '新器材', category: '', brand: '', serial: '', ownership: '自有', status: '在库', purchaseDate: '', value: null, note: '' });
@@ -5548,6 +5602,42 @@ function renderSyncModal() {
 
 document.getElementById('syncSettingsBtn').addEventListener('click', openSyncSettings);
 document.getElementById('localBackupBtn').addEventListener('click', openBackupMenu);
+
+// ===== Star rating delegated handler =====
+document.addEventListener('click', (e) => {
+  const bar = e.target.closest('.star-bar[data-rec]');
+  if (!bar) return;
+  e.stopPropagation();
+  const recId = bar.dataset.rec;
+  const rec = state.archive?.records?.find(r => r.id === recId);
+  if (!rec) return;
+  const rect = bar.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  // 5 stars take roughly first ~90% of bar width (last ~10% may be the number); compute on stars area only
+  const starsEl = bar.querySelector('.star-bar-bg');
+  const sr = starsEl.getBoundingClientRect();
+  const sx = e.clientX - sr.left;
+  const frac = Math.max(0, Math.min(1, sx / sr.width));
+  let r = Math.round(frac * 10) / 2; // nearest 0.5 step
+  if (r > 5) r = 5;
+  if (r < 0.5) r = 0.5;
+  // Toggle off if clicking same value
+  if (Math.abs((Number(rec.rating)||0) - r) < 0.01) r = 0;
+  const oldAmount = rec.amount;
+  rec.rating = r;
+  // Smart amount suggestion when rating > 0 and amount is empty
+  if (r > 0 && (oldAmount === null || oldAmount === undefined || oldAmount === '' || Number(oldAmount) === 0)) {
+    const suggestion = suggestAmountForRating(rec, r);
+    if (suggestion) {
+      if (confirm(`${r}★ 项目历史均价约 ¥${suggestion.avg.toLocaleString()}（参考 ${suggestion.count} 条）。\n\n要把它填到「金额」吗？`)) {
+        rec.amount = suggestion.avg;
+        rec.status = '已收款';
+      }
+    }
+  }
+  saveState();
+  render();
+});
 
 // ===== Global search =====
 function globalSearch(q) {
