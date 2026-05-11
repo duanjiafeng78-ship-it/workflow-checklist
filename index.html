@@ -155,6 +155,7 @@ body {
 }
 .sync-dot.connected { background: #2ecc71; }
 .sync-dot.syncing { background: #f1c40f; animation: pulse-dot 1s infinite; }
+.sync-dot.receiving { background: #3498db; animation: pulse-dot 1s infinite; }
 .sync-dot.error { background: #e74c3c; }
 @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
@@ -5455,11 +5456,36 @@ function launchConfetti() {
 
 // ===== Cloud Sync (Firebase) =====
 const SYNC_CONFIG_KEY = 'workflow-sync-config';
+const SYNC_DEVICE_ID_KEY = 'workflow-sync-device-id';
+const CLOUD_SCHEMA_VERSION = 2;
+const CLOUD_STATE_PATH = 'checklistData';
 let syncDb = null;
 let syncRef = null;
+let syncConnectionRef = null;
 let syncListener = null;
-let syncStatus = 'disconnected'; // disconnected | connected | syncing | error
-let _skipNextRemote = false; // prevent echo after local save
+let syncConnectionListener = null;
+let syncStatus = 'disconnected'; // disconnected | connected | syncing | receiving | error
+let syncReady = false;
+let syncPushTimer = null;
+let queuedCloudPush = false;
+let lastCloudSnapshotJson = '';
+let lastRemoteMeta = null;
+let isApplyingRemoteState = false;
+const syncDeviceId = getOrCreateSyncDeviceId();
+const syncClientId = `${syncDeviceId}-${Math.random().toString(36).slice(2, 8)}`;
+
+function getOrCreateSyncDeviceId() {
+  try {
+    let id = localStorage.getItem(SYNC_DEVICE_ID_KEY);
+    if (!id) {
+      id = `device-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      localStorage.setItem(SYNC_DEVICE_ID_KEY, id);
+    }
+    return id;
+  } catch(e) {
+    return `device-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+}
 
 function getSyncConfig() {
   try { return JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)); } catch(e) { return null; }
@@ -5473,61 +5499,217 @@ function clearSyncConfig() {
   localStorage.removeItem(SYNC_CONFIG_KEY);
 }
 
-function updateSyncStatus(status) {
+function updateSyncStatus(status, detail = '') {
   syncStatus = status;
   const el = document.getElementById('syncStatus');
   if (!el) return;
-  if (status === 'disconnected') {
-    el.innerHTML = '';
+  const labels = {
+    disconnected: '离线',
+    connected: '已同步',
+    syncing: '同步中…',
+    receiving: '接收更新…',
+    error: '同步失败',
+  };
+  const suffix = detail ? ` · ${esc(detail)}` : '';
+  el.innerHTML = `<div class="sync-status"><span class="sync-dot ${status}"></span>${labels[status] || ''}${suffix}</div>`;
+}
+
+function getCloudStateSnapshot() {
+  const copy = JSON.parse(JSON.stringify(state || {}));
+  // View position is local-only so devices do not drag each other between tabs/projects.
+  delete copy.view;
+  delete copy.activeProjectId;
+  (copy.projects || []).forEach(project => delete project.activeModuleId);
+  return copy;
+}
+
+function getCloudSnapshotJson() {
+  return JSON.stringify(getCloudStateSnapshot());
+}
+
+function extractRemoteState(value) {
+  if (!value) return { data: null, meta: null };
+  if (value.schemaVersion && value.data) {
+    return {
+      data: value.data,
+      meta: {
+        schemaVersion: value.schemaVersion,
+        updatedAt: value.updatedAt || value.clientUpdatedAt || 0,
+        clientUpdatedAt: value.clientUpdatedAt || 0,
+        updatedBy: value.updatedBy || '',
+        deviceId: value.deviceId || '',
+        isLegacy: false,
+      },
+    };
+  }
+  // Backward compatibility for the previous raw-state Firebase shape.
+  return {
+    data: value,
+    meta: { schemaVersion: 1, updatedAt: 0, clientUpdatedAt: 0, updatedBy: 'legacy', deviceId: '', isLegacy: true },
+  };
+}
+
+function hasUsableRemoteData(remoteState) {
+  if (!remoteState || typeof remoteState !== 'object') return false;
+  return Array.isArray(remoteState.projects) ||
+    !!remoteState.archive ||
+    !!remoteState.callsheets ||
+    !!remoteState.shotlogs ||
+    !!remoteState.equipment ||
+    !!remoteState.shotlists ||
+    !!remoteState.links ||
+    !!remoteState.knowledge;
+}
+
+function hasProjectList(data) {
+  return Array.isArray(data?.projects);
+}
+
+function isKnownView(view) {
+  return ['workflow', 'archive', 'callsheet', 'shotlog', 'equipment', 'shotlist', 'calendar', 'links', 'kb'].includes(view);
+}
+
+function applyRemoteState(remoteState) {
+  const localView = isKnownView(state?.view) ? state.view : 'workflow';
+  const localActiveProjectId = state?.activeProjectId || null;
+  const localActiveModules = new Map((state?.projects || []).map(project => [project.id, project.activeModuleId]));
+  state = JSON.parse(JSON.stringify(remoteState || {}));
+  if (!Array.isArray(state.projects)) state.projects = [];
+  state.projects.forEach(p => {
+    migrateProject(p);
+    const localActiveModuleId = localActiveModules.get(p.id);
+    if (localActiveModuleId && p.modules?.some(module => module.id === localActiveModuleId)) {
+      p.activeModuleId = localActiveModuleId;
+    } else if (!p.activeModuleId && p.modules?.length) {
+      p.activeModuleId = p.modules[0].id;
+    }
+  });
+  state.view = localView;
+  if (localActiveProjectId && state.projects.some(p => p.id === localActiveProjectId)) {
+    state.activeProjectId = localActiveProjectId;
+  } else if (!state.activeProjectId && state.projects.length > 0) {
+    state.activeProjectId = state.projects[0].id;
+  } else if (state.activeProjectId && !state.projects.some(p => p.id === state.activeProjectId)) {
+    state.activeProjectId = state.projects[0]?.id || null;
+  }
+  ensureArchive();
+}
+
+function rememberRemoteSnapshot(meta = null) {
+  lastCloudSnapshotJson = getCloudSnapshotJson();
+  lastRemoteMeta = meta;
+}
+
+function formatSyncTime(meta) {
+  const ts = Number(meta?.updatedAt || meta?.clientUpdatedAt || 0);
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return '刚刚';
+  const minutes = Math.round(diff / 60_000);
+  if (minutes < 60) return `${minutes} 分钟前`;
+  return new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function scheduleCloudPush(delay = 450) {
+  if (!syncRef || isApplyingRemoteState) return;
+  const snapshotJson = getCloudSnapshotJson();
+  if (snapshotJson === lastCloudSnapshotJson) return;
+  if (!syncReady) {
+    queuedCloudPush = true;
     return;
   }
-  const labels = { connected: '已同步', syncing: '同步中…', error: '同步失败' };
-  el.innerHTML = `<div class="sync-status"><span class="sync-dot ${status}"></span>${labels[status] || ''}</div>`;
+  queuedCloudPush = false;
+  clearTimeout(syncPushTimer);
+  syncPushTimer = setTimeout(() => pushToCloud(), delay);
+}
+
+function teardownFirebase(clearConfig = false) {
+  clearTimeout(syncPushTimer);
+  syncPushTimer = null;
+  queuedCloudPush = false;
+  syncReady = false;
+  if (syncListener && syncRef) syncRef.off('value', syncListener);
+  if (syncConnectionListener && syncConnectionRef) syncConnectionRef.off('value', syncConnectionListener);
+  syncListener = null;
+  syncConnectionListener = null;
+  syncRef = null;
+  syncConnectionRef = null;
+  syncDb = null;
+  try { firebase.app().delete(); } catch(e) {}
+  if (clearConfig) clearSyncConfig();
 }
 
 function connectFirebase(config) {
   try {
-    // Avoid reinitializing if already connected with same config
-    if (syncDb) {
-      try { firebase.app().delete(); } catch(e) {}
-      syncDb = null;
-      syncRef = null;
-      if (syncListener) syncListener();
-      syncListener = null;
-    }
+    if (syncDb) teardownFirebase(false);
     const app = firebase.initializeApp(config);
     syncDb = firebase.database();
-    syncRef = syncDb.ref('checklistData');
+    syncRef = syncDb.ref(CLOUD_STATE_PATH);
+    syncConnectionRef = syncDb.ref('.info/connected');
+    syncReady = false;
+    updateSyncStatus('syncing', '连接云端');
 
     // Listen for remote changes
     syncListener = syncRef.on('value', (snap) => {
-      if (_skipNextRemote) { _skipNextRemote = false; return; }
-      const remoteData = snap.val();
-      if (remoteData && remoteData.projects) {
-        // Merge: use remote data
-        state = remoteData;
-        state.projects.forEach(p => migrateProject(p));
-        if (!state.activeProjectId && state.projects.length > 0) {
-          state.activeProjectId = state.projects[0].id;
+      const { data: remoteState, meta } = extractRemoteState(snap.val());
+      syncReady = true;
+
+      if (!hasUsableRemoteData(remoteState)) {
+        updateSyncStatus('connected', '云端为空');
+        scheduleCloudPush(0);
+        renderSyncModal();
+        return;
+      }
+
+      if (!hasProjectList(remoteState) && hasProjectList(state) && state.projects.length > 0) {
+        updateSyncStatus('syncing', '补全云端项目');
+        scheduleCloudPush(0);
+        renderSyncModal();
+        return;
+      }
+
+      if (meta?.isLegacy && !hasProjectList(remoteState)) {
+        if ((state.projects || []).length > 0) {
+          updateSyncStatus('syncing', '上传本机项目');
+          scheduleCloudPush(0);
+        } else {
+          updateSyncStatus('connected', '云端待初始化');
         }
-        if (!state.view) state.view = 'workflow';
-        ensureArchive();
-        // Save locally too
+        renderSyncModal();
+        return;
+      }
+
+      if (meta?.updatedBy === syncClientId) {
+        rememberRemoteSnapshot(meta);
+        updateSyncStatus('connected', formatSyncTime(meta));
+        renderSyncModal();
+        return;
+      }
+
+      updateSyncStatus('receiving');
+      isApplyingRemoteState = true;
+      try {
+        applyRemoteState(remoteState);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         render();
+        rememberRemoteSnapshot(meta);
+      } finally {
+        isApplyingRemoteState = false;
       }
-      updateSyncStatus('connected');
+      updateSyncStatus('connected', formatSyncTime(meta));
+      renderSyncModal();
+      if (queuedCloudPush) scheduleCloudPush(700);
     }, (err) => {
       console.error('Sync error:', err);
       updateSyncStatus('error');
     });
 
     // Monitor connection state
-    firebase.database().ref('.info/connected').on('value', (snap) => {
-      updateSyncStatus(snap.val() ? 'connected' : 'disconnected');
+    syncConnectionListener = syncConnectionRef.on('value', (snap) => {
+      if (snap.val()) updateSyncStatus(syncReady ? 'connected' : 'syncing');
+      else updateSyncStatus('disconnected');
     });
 
-    updateSyncStatus('connected');
     setSyncConfig(config);
     return true;
   } catch(e) {
@@ -5538,35 +5720,45 @@ function connectFirebase(config) {
 }
 
 function disconnectFirebase() {
-  if (syncListener && syncRef) {
-    syncRef.off('value', syncListener);
-    syncListener = null;
-  }
-  try { firebase.app().delete(); } catch(e) {}
-  syncDb = null;
-  syncRef = null;
-  clearSyncConfig();
+  teardownFirebase(true);
   updateSyncStatus('disconnected');
 }
 
-function pushToCloud() {
+function pushToCloud(options = {}) {
   if (!syncRef) return;
-  _skipNextRemote = true;
+  const force = !!options.force;
+  const snapshot = getCloudStateSnapshot();
+  const snapshotJson = JSON.stringify(snapshot);
+  if (!force && snapshotJson === lastCloudSnapshotJson) {
+    updateSyncStatus('connected', formatSyncTime(lastRemoteMeta));
+    return;
+  }
   updateSyncStatus('syncing');
-  syncRef.set(state).then(() => {
-    updateSyncStatus('connected');
+  const now = Date.now();
+  const payload = {
+    schemaVersion: CLOUD_SCHEMA_VERSION,
+    updatedAt: firebase.database.ServerValue.TIMESTAMP,
+    clientUpdatedAt: now,
+    updatedBy: syncClientId,
+    deviceId: syncDeviceId,
+    data: snapshot,
+  };
+  syncRef.set(payload).then(() => {
+    lastCloudSnapshotJson = snapshotJson;
+    lastRemoteMeta = { ...payload, updatedAt: now };
+    updateSyncStatus('connected', '刚刚');
+    renderSyncModal();
   }).catch((err) => {
     console.error('Push error:', err);
-    _skipNextRemote = false;
     updateSyncStatus('error');
   });
 }
 
 // Patch saveState to also push to cloud
 const _origSaveState = saveState;
-saveState = function() {
+saveState = function(options = {}) {
   _origSaveState();
-  pushToCloud();
+  if (options.sync !== false) scheduleCloudPush();
 };
 
 // Sync modal UI
@@ -5581,20 +5773,26 @@ function closeSyncSettings() {
 
 function renderSyncModal() {
   const body = document.getElementById('syncModalBody');
+  if (!body) return;
   const isConnected = !!syncDb;
+  const icon = syncStatus === 'error' ? '⚠️' : (isConnected && syncReady ? '✅' : '⏳');
+  const statusText = syncStatus === 'error' ? '云同步连接异常' : (isConnected && syncReady ? '云同步已开启' : '正在连接云端…');
+  const lastSync = formatSyncTime(lastRemoteMeta);
 
   body.innerHTML = `
     <div class="sync-connected-info">
-      <div class="big-check">${isConnected ? '✅' : '⏳'}</div>
-      <div class="connected-text">${isConnected ? '云同步已开启' : '正在连接…'}</div>
-      <div class="db-url">所有设备打开即自动同步，无需额外设置</div>
+      <div class="big-check">${icon}</div>
+      <div class="connected-text">${statusText}</div>
+      <div class="db-url">项目、档案、通告、场记、器材、镜头清单、链接和知识库会实时同步。</div>
+      <div class="db-url">当前页面位置只保留在本设备，避免多台设备互相跳页。</div>
+      ${lastSync ? `<div class="db-url">最近同步：${esc(lastSync)}</div>` : ''}
       <div style="margin-top:16px;">
         <button class="confirm-btn" id="syncPushBtn" style="width:100%">立即上传当前数据</button>
       </div>
     </div>
   `;
   document.getElementById('syncPushBtn').addEventListener('click', () => {
-    pushToCloud();
+    pushToCloud({ force: true });
     SFX.check();
     closeSyncSettings();
   });
